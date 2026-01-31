@@ -20,3 +20,13 @@ body {
   background: #334155; 
   border-radius: 4px;
 }
+
+/* Custom Chart Text Overrides */
+.custom-chart .recharts-cartesian-axis-tick-value {
+  fill: #94a3b8 !important; /* Slate-400 color */
+  font-size: 10px;
+}
+
+.custom-chart .recharts-legend-item-text {
+  color: #f1f5f9 !important;
+}
