@@ -71,7 +71,7 @@ export default function DashboardClient({ latest, daily, history, events }: any)
   }));
 
   return (
-    <main className="h-screen bg-slate-950 text-slate-200 p-2 md:p-4 flex flex-col overflow-hidden font-sans">
+    <main className="min-h-screen bg-slate-950 text-slate-200 p-2 md:p-4 flex flex-col font-sans">
       
       {/* 1. HEADER & STATUS */}
       <div className="flex-none mb-3">
@@ -130,9 +130,9 @@ export default function DashboardClient({ latest, daily, history, events }: any)
         </Card>
       </Grid>
 
-      {/* 3. CHART & STATS (Fills remaining space) */}
-      <div className="flex-grow grid grid-cols-1 lg:grid-cols-4 gap-2 sm:gap-4 min-h-0 overflow-auto">
-        <Card className="bg-slate-900 border-slate-800 ring-0 lg:col-span-3 flex flex-col min-h-0">
+      {/* 3. CHART & STATS */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-2 sm:gap-4">
+        <Card className="bg-slate-900 border-slate-800 ring-0 lg:col-span-3 flex flex-col">
           {/* Chart Header - Responsive Layout */}
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-2">
             {/* Title + Time Range */}
@@ -163,10 +163,10 @@ export default function DashboardClient({ latest, daily, history, events }: any)
                 <span className="flex items-center gap-1"><span className="w-2 h-2 sm:w-3 sm:h-3 rounded-sm" style={{backgroundColor: COLORS.trigger}}></span> Trigger</span>
                 <span className="flex items-center gap-1"><span className="w-2 h-2 sm:w-3 sm:h-3 rounded-sm" style={{backgroundColor: COLORS.alarm}}></span> Alarm</span>
               </div>
-              {/* Fullscreen Button - Hidden on mobile */}
+              {/* Fullscreen Button */}
               <button
                 onClick={() => setIsFullscreen(true)}
-                className="hidden sm:block p-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors"
+                className="p-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors"
                 title="Fullscreen"
               >
                 <ArrowsPointingOutIcon className="h-4 w-4" />
@@ -174,7 +174,7 @@ export default function DashboardClient({ latest, daily, history, events }: any)
             </div>
           </div>
 
-          <div className="flex-grow min-h-0 min-h-[200px] sm:min-h-0">
+          <div className="h-[250px] sm:h-[350px] lg:h-[400px]">
             <LineChart
               className="h-full w-full custom-chart"
               data={chartData}
@@ -195,7 +195,7 @@ export default function DashboardClient({ latest, daily, history, events }: any)
 
         {/* DAILY STATS & EVENTS - Horizontal on mobile, vertical on desktop */}
         <div className="flex flex-row lg:flex-col gap-2 sm:gap-4">
-          <Card className="bg-slate-900 border-slate-800 ring-0 p-2 sm:p-4 flex-1 lg:flex-none">
+          <Card className="bg-slate-900 border-slate-800 ring-0 p-2 sm:p-4 flex-1">
             <Title className="text-white text-xs sm:text-sm border-b border-slate-800 pb-1 sm:pb-2 mb-1 sm:mb-2">Daily Totals</Title>
             <List className="mt-0">
               <ListItem className="py-1 sm:py-3 border-slate-800">
@@ -211,7 +211,7 @@ export default function DashboardClient({ latest, daily, history, events }: any)
           </Card>
 
           {/* Event History */}
-          <Card className="bg-slate-900 border-slate-800 ring-0 p-2 sm:p-4 flex-1 lg:flex-grow overflow-hidden">
+          <Card className="bg-slate-900 border-slate-800 ring-0 p-2 sm:p-4 flex-1">
             <Title className="text-white text-xs sm:text-sm border-b border-slate-800 pb-1 sm:pb-2 mb-1 sm:mb-2">Recent Events</Title>
             <div className="overflow-y-auto max-h-24 sm:max-h-40">
               {events && events.length > 0 ? (

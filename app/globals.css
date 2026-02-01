@@ -82,3 +82,26 @@ body {
   background: #020617;
   padding: 1rem;
 }
+
+/* Landscape mode on mobile - reduce header/metrics to fit chart */
+@media (max-height: 500px) and (orientation: landscape) {
+  /* Reduce padding */
+  main {
+    padding: 0.5rem !important;
+  }
+
+  /* Smaller status header */
+  .flex-none.mb-3 {
+    margin-bottom: 0.25rem !important;
+  }
+
+  /* Compact metrics row */
+  .grid.numItems-2 {
+    gap: 0.25rem !important;
+  }
+
+  /* Smaller chart in landscape mobile */
+  .h-\[250px\] {
+    height: 180px !important;
+  }
+}
