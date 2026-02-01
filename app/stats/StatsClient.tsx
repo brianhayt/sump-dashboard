@@ -147,36 +147,38 @@ export default function StatsClient({
           {/* Monthly Heatmap */}
           <Card className="bg-slate-900 border-slate-800 ring-0 mb-6">
             <Title className="text-white mb-4">Last 30 Days Activity</Title>
-            <div className="mb-2 flex items-center gap-2 text-xs text-slate-500">
-              <span>Less</span>
-              <div className="flex gap-1">
-                {[0.1, 0.3, 0.5, 0.7, 1].map((intensity, i) => (
-                  <div
-                    key={i}
-                    className="w-3 h-3 rounded-sm"
-                    style={{ backgroundColor: getHeatColor(intensity) }}
-                  />
+            {/* Constrained width container for heatmap */}
+            <div className="max-w-md">
+              <div className="mb-2 flex items-center gap-2 text-xs text-slate-500">
+                <span>Less</span>
+                <div className="flex gap-1">
+                  {[0.1, 0.3, 0.5, 0.7, 1].map((intensity, i) => (
+                    <div
+                      key={i}
+                      className="w-3 h-3 rounded-sm"
+                      style={{ backgroundColor: getHeatColor(intensity) }}
+                    />
+                  ))}
+                </div>
+                <span>More</span>
+              </div>
+              <div className="grid grid-cols-7 gap-1 mb-2">
+                {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
+                  <div key={day} className="text-center text-xs text-slate-600 py-1">
+                    {day}
+                  </div>
                 ))}
               </div>
-              <span>More</span>
-            </div>
-            <div className="grid grid-cols-7 gap-1 mb-2">
-              {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
-                <div key={day} className="text-center text-xs text-slate-600 py-1">
-                  {day}
-                </div>
-              ))}
-            </div>
-            <div className="grid grid-cols-7 gap-1">
-              {heatmapData.map((day, index) => (
-                <div
-                  key={index}
-                  className={`aspect-square rounded-sm cursor-default ${
-                    day.isEmpty ? "bg-slate-800/50" : ""
-                  }`}
-                  style={
-                    !day.isEmpty
-                      ? { backgroundColor: getHeatColor((day.gallons || 0) / maxGallons) }
+              <div className="grid grid-cols-7 gap-1">
+                {heatmapData.map((day, index) => (
+                  <div
+                    key={index}
+                    className={`w-8 h-8 sm:w-10 sm:h-10 rounded-sm cursor-default ${
+                      day.isEmpty ? "bg-slate-800/50" : ""
+                    }`}
+                    style={
+                      !day.isEmpty
+                        ? { backgroundColor: getHeatColor((day.gallons || 0) / maxGallons) }
                       : undefined
                   }
                   title={
@@ -186,6 +188,7 @@ export default function StatsClient({
                   }
                 />
               ))}
+              </div>
             </div>
           </Card>
 
