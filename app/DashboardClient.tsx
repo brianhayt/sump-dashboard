@@ -1,21 +1,30 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Card, LineChart, Title, Text, Metric, Flex, Badge, Grid, ProgressBar, List, ListItem } from "@tremor/react";
-import { BoltIcon, Battery100Icon, SignalIcon, ExclamationTriangleIcon } from "@heroicons/react/24/solid";
+import { BoltIcon, Battery100Icon, SignalIcon, ExclamationTriangleIcon, ArrowsPointingOutIcon, XMarkIcon } from "@heroicons/react/24/solid";
 
-// 1. NEON COLORS CONFIGURATION
-// These are bright colors that are easy to see on black backgrounds
+// NEON COLORS CONFIGURATION
 const COLORS = {
   level: "#06b6d4",   // Cyan (Bright Blue)
   trigger: "#84cc16", // Lime (Bright Green)
   alarm: "#d946ef"    // Fuchsia (Bright Pink)
 };
 
-export default function DashboardClient({ latest, daily, history }: any) {
+// Time range options in hours
+const TIME_RANGES = [
+  { label: "1h", hours: 1 },
+  { label: "6h", hours: 6 },
+  { label: "12h", hours: 12 },
+  { label: "24h", hours: 24 },
+];
+
+export default function DashboardClient({ latest, daily, history, events }: any) {
   const router = useRouter();
   const [now, setNow] = useState(Date.now());
+  const [selectedRange, setSelectedRange] = useState(24); // Default to 24h
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   // Auto-refresh data every 30 seconds
   useEffect(() => {
@@ -24,6 +33,17 @@ export default function DashboardClient({ latest, daily, history }: any) {
     return () => { clearInterval(timer); clearInterval(dataRefresher); };
   }, [router]);
 
+  // Handle escape key for fullscreen
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && isFullscreen) {
+        setIsFullscreen(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isFullscreen]);
+
   // Data Calculations
   const lastSeen = new Date(latest.created_at).getTime();
   const minsAgo = Math.floor((now - lastSeen) / 60000);
@@ -31,13 +51,20 @@ export default function DashboardClient({ latest, daily, history }: any) {
   const isHighWater = latest.water_level_inches > 6.0;
   const systemHealthy = isOnline && !isHighWater && latest.ac_power_on;
 
+  // Filter history by selected time range
+  const filteredHistory = history?.filter((r: any) => {
+    const readingTime = new Date(r.created_at).getTime();
+    const cutoff = Date.now() - selectedRange * 60 * 60 * 1000;
+    return readingTime >= cutoff;
+  }) || [];
+
   // Chart Data Formatting
-  const chartData = history?.map((r: any) => ({
+  const chartData = filteredHistory.map((r: any) => ({
     Time: new Date(r.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     "Water Level": r.water_level_inches,
     "Pump Trigger": 4.5,
     "High Alarm": 6.0
-  })) || [];
+  }));
 
   return (
     <main className="h-screen bg-slate-950 text-slate-200 p-2 md:p-4 flex flex-col overflow-hidden font-sans">
@@ -103,22 +130,50 @@ export default function DashboardClient({ latest, daily, history }: any) {
       <div className="flex-grow grid grid-cols-1 lg:grid-cols-4 gap-4 min-h-0">
         <Card className="bg-slate-900 border-slate-800 ring-0 lg:col-span-3 flex flex-col min-h-0">
           <div className="flex justify-between items-center mb-2">
-            <Title className="text-white">Live Water Level</Title>
-            {/* Custom Legend matches the Hex Codes exactly */}
-            <div className="flex gap-4 text-[10px] uppercase tracking-widest font-bold">
-               <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm" style={{backgroundColor: COLORS.level}}></span> Level</span>
-               <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm" style={{backgroundColor: COLORS.trigger}}></span> Trigger</span>
-               <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm" style={{backgroundColor: COLORS.alarm}}></span> Alarm</span>
+            <div className="flex items-center gap-4">
+              <Title className="text-white">Live Water Level</Title>
+              {/* Time Range Selector */}
+              <div className="flex gap-1">
+                {TIME_RANGES.map((range) => (
+                  <button
+                    key={range.hours}
+                    onClick={() => setSelectedRange(range.hours)}
+                    className={`px-2 py-1 text-xs rounded transition-colors ${
+                      selectedRange === range.hours
+                        ? "bg-cyan-600 text-white"
+                        : "bg-slate-800 text-slate-400 hover:bg-slate-700"
+                    }`}
+                  >
+                    {range.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="flex items-center gap-4">
+              {/* Custom Legend */}
+              <div className="flex gap-4 text-[10px] uppercase tracking-widest font-bold">
+                <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm" style={{backgroundColor: COLORS.level}}></span> Level</span>
+                <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm" style={{backgroundColor: COLORS.trigger}}></span> Trigger</span>
+                <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm" style={{backgroundColor: COLORS.alarm}}></span> Alarm</span>
+              </div>
+              {/* Fullscreen Button */}
+              <button
+                onClick={() => setIsFullscreen(true)}
+                className="p-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors"
+                title="Fullscreen"
+              >
+                <ArrowsPointingOutIcon className="h-4 w-4" />
+              </button>
             </div>
           </div>
-          
+
           <div className="flex-grow min-h-0">
             <LineChart
               className="h-full w-full custom-chart"
               data={chartData}
               index="Time"
               categories={["Water Level", "Pump Trigger", "High Alarm"]}
-              colors={["cyan", "lime", "fuchsia"]} // Matches our COLORS object
+              colors={["cyan", "lime", "fuchsia"]}
               showLegend={false}
               showGridLines={true}
               yAxisWidth={35}
@@ -131,22 +186,110 @@ export default function DashboardClient({ latest, daily, history }: any) {
           </div>
         </Card>
 
-        {/* DAILY STATS */}
-        <Card className="bg-slate-900 border-slate-800 ring-0 p-4 flex flex-col justify-center">
-          <Title className="text-white text-sm border-b border-slate-800 pb-2 mb-2">Daily Totals</Title>
-          <List className="mt-0">
-            <ListItem className="py-3 border-slate-800">
+        {/* DAILY STATS & EVENTS */}
+        <div className="flex flex-col gap-4">
+          <Card className="bg-slate-900 border-slate-800 ring-0 p-4">
+            <Title className="text-white text-sm border-b border-slate-800 pb-2 mb-2">Daily Totals</Title>
+            <List className="mt-0">
+              <ListItem className="py-3 border-slate-800">
                 <span className="text-slate-400 text-sm">Cycles</span>
                 <span className="text-white font-mono text-2xl">{daily?.total_cycles || 0}</span>
-            </ListItem>
-            <ListItem className="py-3 border-slate-800">
+              </ListItem>
+              <ListItem className="py-3 border-slate-800">
                 <span className="text-slate-400 text-sm">Gallons</span>
                 <span className="text-white font-mono text-2xl">{daily?.total_gallons?.toFixed(0) || 0}</span>
-            </ListItem>
-          </List>
-          <Text className="text-slate-600 text-xs text-center mt-auto pt-2">Resets at midnight</Text>
-        </Card>
+              </ListItem>
+            </List>
+            <Text className="text-slate-600 text-xs text-center mt-2">Resets at midnight</Text>
+          </Card>
+
+          {/* Event History */}
+          <Card className="bg-slate-900 border-slate-800 ring-0 p-4 flex-grow overflow-hidden">
+            <Title className="text-white text-sm border-b border-slate-800 pb-2 mb-2">Recent Events</Title>
+            <div className="overflow-y-auto max-h-40">
+              {events && events.length > 0 ? (
+                <List className="mt-0">
+                  {events.slice(0, 5).map((event: any, index: number) => (
+                    <ListItem key={event.id || index} className="py-2 border-slate-800">
+                      <span className="text-slate-400 text-xs truncate">{event.event_type?.replace(/_/g, ' ')}</span>
+                      <span className="text-slate-500 text-xs">
+                        {new Date(event.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </ListItem>
+                  ))}
+                </List>
+              ) : (
+                <Text className="text-slate-500 text-xs text-center">No recent events</Text>
+              )}
+            </div>
+          </Card>
+        </div>
       </div>
+
+      {/* Fullscreen Chart Overlay */}
+      {isFullscreen && (
+        <div className="fixed inset-0 bg-slate-950 z-50 p-4 flex flex-col">
+          <div className="flex justify-between items-center mb-4">
+            <div className="flex items-center gap-4">
+              <Title className="text-white text-2xl">Live Water Level</Title>
+              {/* Time Range Selector */}
+              <div className="flex gap-1">
+                {TIME_RANGES.map((range) => (
+                  <button
+                    key={range.hours}
+                    onClick={() => setSelectedRange(range.hours)}
+                    className={`px-3 py-1 text-sm rounded transition-colors ${
+                      selectedRange === range.hours
+                        ? "bg-cyan-600 text-white"
+                        : "bg-slate-800 text-slate-400 hover:bg-slate-700"
+                    }`}
+                  >
+                    {range.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="flex items-center gap-6">
+              {/* Legend */}
+              <div className="flex gap-6 text-xs uppercase tracking-widest font-bold">
+                <span className="flex items-center gap-2"><span className="w-4 h-4 rounded-sm" style={{backgroundColor: COLORS.level}}></span> Level</span>
+                <span className="flex items-center gap-2"><span className="w-4 h-4 rounded-sm" style={{backgroundColor: COLORS.trigger}}></span> Trigger</span>
+                <span className="flex items-center gap-2"><span className="w-4 h-4 rounded-sm" style={{backgroundColor: COLORS.alarm}}></span> Alarm</span>
+              </div>
+              {/* Current Level */}
+              <div className="text-cyan-400 text-xl font-mono">
+                {latest.water_level_inches.toFixed(1)}"
+              </div>
+              {/* Close Button */}
+              <button
+                onClick={() => setIsFullscreen(false)}
+                className="p-2 rounded bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors"
+                title="Exit Fullscreen (Esc)"
+              >
+                <XMarkIcon className="h-6 w-6" />
+              </button>
+            </div>
+          </div>
+          <div className="flex-grow">
+            <LineChart
+              className="h-full w-full custom-chart"
+              data={chartData}
+              index="Time"
+              categories={["Water Level", "Pump Trigger", "High Alarm"]}
+              colors={["cyan", "lime", "fuchsia"]}
+              showLegend={false}
+              showGridLines={true}
+              yAxisWidth={50}
+              minValue={0}
+              maxValue={10}
+              autoMinValue={false}
+              showAnimation={false}
+              connectNulls={true}
+            />
+          </div>
+          <Text className="text-slate-600 text-center mt-2">Press Escape or click X to exit fullscreen</Text>
+        </div>
+      )}
     </main>
   );
 }

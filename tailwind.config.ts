@@ -6,12 +6,10 @@ const config: Config = {
     "./pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
-    // THIS IS THE KEY LINE THAT FIXES THE INVISIBLE GRAPH:
     "./node_modules/@tremor/**/*.{js,ts,jsx,tsx}",
+    "./app/safelist.txt",
   ],
   theme: {
-    transparent: "transparent",
-    current: "currentColor",
     extend: {
       colors: {
         // Tremor requires these specific color definitions
@@ -47,13 +45,6 @@ const config: Config = {
       },
     },
   },
-  safelist: [
-    {
-      pattern:
-        /^(bg|text|border|ring|stroke|fill)-(cyan|lime|fuchsia|blue|emerald|rose)-(400|500|600)$/,
-      variants: ["hover", "ui-selected"],
-    },
-  ],
   plugins: [],
 };
 export default config;

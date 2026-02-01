@@ -9,28 +9,52 @@ const supabase = createClient(
 export const revalidate = 0;
 
 async function getData() {
-  const { data: latest } = await supabase
+  const { data: latest, error: latestError } = await supabase
     .from('readings')
     .select('*')
     .order('created_at', { ascending: false })
     .limit(1)
     .single();
 
-  const { data: daily } = await supabase
+  if (latestError) {
+    console.error('Error fetching latest reading:', latestError);
+  }
+
+  const { data: daily, error: dailyError } = await supabase
     .from('daily_summaries')
     .select('*')
     .order('date', { ascending: false })
     .limit(1)
     .single();
 
+  if (dailyError) {
+    console.error('Error fetching daily summary:', dailyError);
+  }
+
+  // Fetch 24h of history for time range filtering on client
   const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-  const { data: history } = await supabase
+  const { data: history, error: historyError } = await supabase
     .from('readings')
     .select('created_at, water_level_inches')
     .gt('created_at', yesterday)
     .order('created_at', { ascending: true });
 
-  return { latest, daily, history };
+  if (historyError) {
+    console.error('Error fetching history:', historyError);
+  }
+
+  // Fetch recent events for the event history panel
+  const { data: events, error: eventsError } = await supabase
+    .from('events')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(10);
+
+  if (eventsError) {
+    console.error('Error fetching events:', eventsError);
+  }
+
+  return { latest, daily, history, events };
 }
 
 export default async function Page() {
@@ -40,5 +64,5 @@ export default async function Page() {
     return <div className="bg-slate-950 min-h-screen p-10 text-white">No sensor data found in Supabase. Check your ESP32 connection.</div>;
   }
 
-  return <DashboardClient latest={data.latest} daily={data.daily} history={data.history || []} />;
+  return <DashboardClient latest={data.latest} daily={data.daily} history={data.history || []} events={data.events || []} />;
 }

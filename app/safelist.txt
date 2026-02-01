@@ -1,0 +1,14 @@
+stroke-cyan-400 stroke-cyan-500 stroke-cyan-600
+stroke-lime-400 stroke-lime-500 stroke-lime-600
+stroke-fuchsia-400 stroke-fuchsia-500 stroke-fuchsia-600
+stroke-blue-400 stroke-blue-500 stroke-blue-600
+stroke-emerald-400 stroke-emerald-500 stroke-emerald-600
+stroke-rose-400 stroke-rose-500 stroke-rose-600
+fill-cyan-400 fill-cyan-500 fill-cyan-600
+fill-lime-400 fill-lime-500 fill-lime-600
+fill-fuchsia-400 fill-fuchsia-500 fill-fuchsia-600
+fill-blue-400 fill-blue-500 fill-blue-600
+fill-emerald-400 fill-emerald-500 fill-emerald-600
+fill-rose-400 fill-rose-500 fill-rose-600
+bg-cyan-500 bg-lime-500 bg-fuchsia-500
+text-cyan-500 text-lime-500 text-fuchsia-500

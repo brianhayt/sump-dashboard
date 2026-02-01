@@ -3,6 +3,28 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Force Tremor/Recharts line visibility - fixes Tailwind v4 class purging */
+.recharts-line-curve {
+  stroke-width: 2 !important;
+}
+
+.custom-chart .recharts-layer path[stroke] {
+  stroke-width: 2 !important;
+}
+
+/* Explicit stroke colors for chart lines */
+.custom-chart .recharts-line:nth-child(1) .recharts-line-curve {
+  stroke: #06b6d4 !important; /* Cyan - Water Level */
+}
+
+.custom-chart .recharts-line:nth-child(2) .recharts-line-curve {
+  stroke: #84cc16 !important; /* Lime - Pump Trigger */
+}
+
+.custom-chart .recharts-line:nth-child(3) .recharts-line-curve {
+  stroke: #d946ef !important; /* Fuchsia - High Alarm */
+}
+
 /* Force the defaults to be Dark Theme (Slate-950 background, Slate-100 text) */
 body {
   background-color: #020617; /* matches bg-slate-950 */
@@ -29,4 +51,24 @@ body {
 
 .custom-chart .recharts-legend-item-text {
   color: #f1f5f9 !important;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 640px) {
+  .custom-chart .recharts-cartesian-axis-tick-value {
+    font-size: 8px !important;
+  }
+
+  .custom-chart .recharts-layer text {
+    font-size: 8px !important;
+  }
+}
+
+/* Fullscreen mode styles */
+.fullscreen-chart {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: #020617;
+  padding: 1rem;
 }
