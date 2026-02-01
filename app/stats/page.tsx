@@ -1,107 +1,80 @@
 import { createClient } from '@supabase/supabase-js'
-import StatsClient from './StatsClient'
+import { Card, Title, Text, List, ListItem, Badge } from "@tremor/react";
+
+export const revalidate = 0;
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-export const revalidate = 0;
-
-async function getStatsData() {
-  // Get date strings for queries
-  const now = new Date();
-  const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-  const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-
-  // Last 7 days for weekly view
-  const { data: weeklyData, error: weeklyError } = await supabase
-    .from('daily_summaries')
-    .select('date, total_cycles, total_gallons')
-    .gte('date', sevenDaysAgo)
-    .order('date', { ascending: true });
-
-  if (weeklyError) {
-    console.error('Error fetching weekly data:', weeklyError);
-  }
-
-  // Last 30 days for monthly heatmap
-  const { data: monthlyData, error: monthlyError } = await supabase
-    .from('daily_summaries')
-    .select('date, total_cycles, total_gallons')
-    .gte('date', thirtyDaysAgo)
-    .order('date', { ascending: true });
-
-  if (monthlyError) {
-    console.error('Error fetching monthly data:', monthlyError);
-  }
-
-  // All-time record (busiest day by gallons)
-  const { data: busiestDay, error: busiestError } = await supabase
-    .from('daily_summaries')
-    .select('date, total_cycles, total_gallons')
-    .order('total_gallons', { ascending: false })
-    .limit(1)
-    .single();
-
-  if (busiestError && busiestError.code !== 'PGRST116') {
-    console.error('Error fetching busiest day:', busiestError);
-  }
-
-  // Day with most cycles
-  const { data: mostCyclesDay, error: cyclesError } = await supabase
-    .from('daily_summaries')
-    .select('date, total_cycles, total_gallons')
-    .order('total_cycles', { ascending: false })
-    .limit(1)
-    .single();
-
-  if (cyclesError && cyclesError.code !== 'PGRST116') {
-    console.error('Error fetching most cycles day:', cyclesError);
-  }
-
-  // All-time totals - fetch all records and sum client-side
-  // (Supabase JS doesn't support aggregate functions directly)
-  const { data: allData, error: allError } = await supabase
-    .from('daily_summaries')
-    .select('total_cycles, total_gallons');
-
-  if (allError) {
-    console.error('Error fetching all-time data:', allError);
-  }
-
-  const allTimeTotals = allData?.reduce(
-    (acc, row) => ({
-      totalCycles: acc.totalCycles + (row.total_cycles || 0),
-      totalGallons: acc.totalGallons + (row.total_gallons || 0),
-    }),
-    { totalCycles: 0, totalGallons: 0 }
-  ) || { totalCycles: 0, totalGallons: 0 };
-
-  // Recent events (power outages, backup activations, sensor errors)
-  const { data: recentEvents, error: eventsError } = await supabase
-    .from('events')
-    .select('*')
-    .in('event_type', ['power_outage', 'power_restored', 'backup_alarm_on', 'backup_alarm_off', 'sensor_error', 'sensor_restored', 'high_water', 'low_battery'])
-    .order('created_at', { ascending: false })
-    .limit(10);
-
-  if (eventsError) {
-    console.error('Error fetching events:', eventsError);
-  }
-
-  return {
-    weeklyData: weeklyData || [],
-    monthlyData: monthlyData || [],
-    busiestDay,
-    mostCyclesDay,
-    allTimeTotals,
-    recentEvents: recentEvents || [],
-  };
+// Helper to make timestamps readable (e.g., "Feb 1, 4:21 PM")
+function formatTime(isoString: string) {
+  return new Date(isoString).toLocaleString('en-US', {
+    month: 'short', day: 'numeric',
+    hour: 'numeric', minute: '2-digit'
+  });
 }
 
 export default async function StatsPage() {
-  const data = await getStatsData();
+  // Fetch latest 50 events
+  const { data: events } = await supabase
+    .from('events')
+    .select('*')
+    .order('created_at', { ascending: false }) // Newest at top
+    .limit(50);
 
-  return <StatsClient {...data} />;
+  return (
+    <main className="min-h-screen bg-slate-950 text-slate-200 p-4 md:p-8">
+      <div className="max-w-4xl mx-auto">
+        
+        {/* Header with Back Link */}
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold text-white">System Events Log</h1>
+          <a href="/" className="text-blue-400 hover:text-blue-300 text-sm">
+            &larr; Back to Dashboard
+          </a>
+        </div>
+
+        <Card className="bg-slate-900 border-slate-800 ring-0">
+          <Title className="text-white mb-4">Recent Pump Activity</Title>
+          <div className="overflow-hidden">
+            <List>
+              {events?.map((event) => (
+                <ListItem key={event.id} className="border-slate-800 py-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between w-full gap-2">
+                    
+                    {/* Event Type Badge */}
+                    <div className="flex items-center gap-3">
+                      <Badge 
+                        color={event.event_type === 'PUMP_START' ? 'cyan' : 'indigo'} 
+                        size="xs"
+                      >
+                        {event.event_type.replace('_', ' ')}
+                      </Badge>
+                      <span className="text-white font-mono text-sm">
+                        {formatTime(event.created_at)}
+                      </span>
+                    </div>
+
+                    {/* Water Level Detail */}
+                    <div className="text-slate-400 text-sm">
+                      Level: <span className="text-white font-bold">{event.water_level_inches?.toFixed(1)}"</span>
+                    </div>
+                  
+                  </div>
+                </ListItem>
+              ))}
+
+              {(!events || events.length === 0) && (
+                <div className="text-center text-slate-500 py-10">
+                  No events recorded yet.
+                </div>
+              )}
+            </List>
+          </div>
+        </Card>
+      </div>
+    </main>
+  );
 }
