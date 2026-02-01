@@ -65,17 +65,16 @@ export default function DashboardClient({ latest, daily, history, events }: any)
 
   // Downsample data for longer time ranges to improve readability
   // 1h: show all points, 6h: every 3rd, 12h: every 6th, 24h: every 12th
+  // Always include the last (most recent) point
   const downsampleRate = selectedRange === 1 ? 1 : selectedRange === 6 ? 3 : selectedRange === 12 ? 6 : 12;
-  const downsampledHistory = filteredHistory.filter((_: any, index: number) => index % downsampleRate === 0);
+  const downsampledHistory = filteredHistory.filter((_: any, index: number, arr: any[]) =>
+    index % downsampleRate === 0 || index === arr.length - 1
+  );
 
   // Chart Data Formatting (category names include units for tooltip display)
-  // Parse timestamp ensuring UTC interpretation, then convert to local time
+  // Let JavaScript Date handle ISO 8601 parsing directly (same approach as events section)
   const chartData = downsampledHistory.map((r: any) => {
-    // Ensure the timestamp is interpreted as UTC if it doesn't have timezone info
-    const timestamp = r.created_at.endsWith('Z') || r.created_at.includes('+')
-      ? r.created_at
-      : r.created_at + 'Z';
-    const date = new Date(timestamp);
+    const date = new Date(r.created_at);
     return {
       Time: date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }),
       "Level (in)": r.water_level_inches,
