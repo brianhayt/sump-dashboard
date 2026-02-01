@@ -51,19 +51,23 @@ export default function DashboardClient({ latest, daily, history, events }: any)
   const isHighWater = latest.water_level_inches > 6.0;
   const systemHealthy = isOnline && !isHighWater && latest.ac_power_on;
 
-  // Filter history by selected time range
+  // Filter history by selected time range (relative to most recent reading, not browser time)
+  const mostRecentTime = history?.length > 0
+    ? new Date(history[history.length - 1].created_at).getTime()
+    : Date.now();
+
   const filteredHistory = history?.filter((r: any) => {
     const readingTime = new Date(r.created_at).getTime();
-    const cutoff = Date.now() - selectedRange * 60 * 60 * 1000;
+    const cutoff = mostRecentTime - selectedRange * 60 * 60 * 1000;
     return readingTime >= cutoff;
   }) || [];
 
-  // Chart Data Formatting
+  // Chart Data Formatting (category names include units for tooltip display)
   const chartData = filteredHistory.map((r: any) => ({
     Time: new Date(r.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    "Water Level": r.water_level_inches,
-    "Pump Trigger": 4.5,
-    "High Alarm": 6.0
+    "Level (in)": r.water_level_inches,
+    "Trigger (in)": 4.5,
+    "Alarm (in)": 6.0
   }));
 
   return (
@@ -127,18 +131,20 @@ export default function DashboardClient({ latest, daily, history, events }: any)
       </Grid>
 
       {/* 3. CHART & STATS (Fills remaining space) */}
-      <div className="flex-grow grid grid-cols-1 lg:grid-cols-4 gap-4 min-h-0">
+      <div className="flex-grow grid grid-cols-1 lg:grid-cols-4 gap-2 sm:gap-4 min-h-0 overflow-auto">
         <Card className="bg-slate-900 border-slate-800 ring-0 lg:col-span-3 flex flex-col min-h-0">
-          <div className="flex justify-between items-center mb-2">
-            <div className="flex items-center gap-4">
-              <Title className="text-white">Live Water Level</Title>
+          {/* Chart Header - Responsive Layout */}
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-2">
+            {/* Title + Time Range */}
+            <div className="flex items-center justify-between sm:justify-start gap-2 sm:gap-4">
+              <Title className="text-white text-sm sm:text-base whitespace-nowrap">Water Level</Title>
               {/* Time Range Selector */}
               <div className="flex gap-1">
                 {TIME_RANGES.map((range) => (
                   <button
                     key={range.hours}
                     onClick={() => setSelectedRange(range.hours)}
-                    className={`px-2 py-1 text-xs rounded transition-colors ${
+                    className={`px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs rounded transition-colors ${
                       selectedRange === range.hours
                         ? "bg-cyan-600 text-white"
                         : "bg-slate-800 text-slate-400 hover:bg-slate-700"
@@ -149,17 +155,18 @@ export default function DashboardClient({ latest, daily, history, events }: any)
                 ))}
               </div>
             </div>
-            <div className="flex items-center gap-4">
-              {/* Custom Legend */}
-              <div className="flex gap-4 text-[10px] uppercase tracking-widest font-bold">
-                <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm" style={{backgroundColor: COLORS.level}}></span> Level</span>
-                <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm" style={{backgroundColor: COLORS.trigger}}></span> Trigger</span>
-                <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm" style={{backgroundColor: COLORS.alarm}}></span> Alarm</span>
+            {/* Legend + Fullscreen */}
+            <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-4">
+              {/* Custom Legend - Compact on mobile */}
+              <div className="flex gap-2 sm:gap-4 text-[8px] sm:text-[10px] uppercase tracking-wider sm:tracking-widest font-bold">
+                <span className="flex items-center gap-1"><span className="w-2 h-2 sm:w-3 sm:h-3 rounded-sm" style={{backgroundColor: COLORS.level}}></span> Level</span>
+                <span className="flex items-center gap-1"><span className="w-2 h-2 sm:w-3 sm:h-3 rounded-sm" style={{backgroundColor: COLORS.trigger}}></span> Trigger</span>
+                <span className="flex items-center gap-1"><span className="w-2 h-2 sm:w-3 sm:h-3 rounded-sm" style={{backgroundColor: COLORS.alarm}}></span> Alarm</span>
               </div>
-              {/* Fullscreen Button */}
+              {/* Fullscreen Button - Hidden on mobile */}
               <button
                 onClick={() => setIsFullscreen(true)}
-                className="p-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors"
+                className="hidden sm:block p-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors"
                 title="Fullscreen"
               >
                 <ArrowsPointingOutIcon className="h-4 w-4" />
@@ -167,16 +174,16 @@ export default function DashboardClient({ latest, daily, history, events }: any)
             </div>
           </div>
 
-          <div className="flex-grow min-h-0">
+          <div className="flex-grow min-h-0 min-h-[200px] sm:min-h-0">
             <LineChart
               className="h-full w-full custom-chart"
               data={chartData}
               index="Time"
-              categories={["Water Level", "Pump Trigger", "High Alarm"]}
+              categories={["Level (in)", "Trigger (in)", "Alarm (in)"]}
               colors={["cyan", "lime", "fuchsia"]}
               showLegend={false}
               showGridLines={true}
-              yAxisWidth={35}
+              yAxisWidth={30}
               minValue={0}
               maxValue={10}
               autoMinValue={false}
@@ -186,37 +193,43 @@ export default function DashboardClient({ latest, daily, history, events }: any)
           </div>
         </Card>
 
-        {/* DAILY STATS & EVENTS */}
-        <div className="flex flex-col gap-4">
-          <Card className="bg-slate-900 border-slate-800 ring-0 p-4">
-            <Title className="text-white text-sm border-b border-slate-800 pb-2 mb-2">Daily Totals</Title>
+        {/* DAILY STATS & EVENTS - Horizontal on mobile, vertical on desktop */}
+        <div className="flex flex-row lg:flex-col gap-2 sm:gap-4">
+          <Card className="bg-slate-900 border-slate-800 ring-0 p-2 sm:p-4 flex-1 lg:flex-none">
+            <Title className="text-white text-xs sm:text-sm border-b border-slate-800 pb-1 sm:pb-2 mb-1 sm:mb-2">Daily Totals</Title>
             <List className="mt-0">
-              <ListItem className="py-3 border-slate-800">
-                <span className="text-slate-400 text-sm">Cycles</span>
-                <span className="text-white font-mono text-2xl">{daily?.total_cycles || 0}</span>
+              <ListItem className="py-1 sm:py-3 border-slate-800">
+                <span className="text-slate-400 text-xs sm:text-sm">Cycles</span>
+                <span className="text-white font-mono text-lg sm:text-2xl">{daily?.total_cycles || 0}</span>
               </ListItem>
-              <ListItem className="py-3 border-slate-800">
-                <span className="text-slate-400 text-sm">Gallons</span>
-                <span className="text-white font-mono text-2xl">{daily?.total_gallons?.toFixed(0) || 0}</span>
+              <ListItem className="py-1 sm:py-3 border-slate-800">
+                <span className="text-slate-400 text-xs sm:text-sm">Gallons</span>
+                <span className="text-white font-mono text-lg sm:text-2xl">{daily?.total_gallons?.toFixed(0) || 0}</span>
               </ListItem>
             </List>
-            <Text className="text-slate-600 text-xs text-center mt-2">Resets at midnight</Text>
+            <Text className="text-slate-600 text-[10px] sm:text-xs text-center mt-1 sm:mt-2">Resets at midnight</Text>
           </Card>
 
           {/* Event History */}
-          <Card className="bg-slate-900 border-slate-800 ring-0 p-4 flex-grow overflow-hidden">
-            <Title className="text-white text-sm border-b border-slate-800 pb-2 mb-2">Recent Events</Title>
-            <div className="overflow-y-auto max-h-40">
+          <Card className="bg-slate-900 border-slate-800 ring-0 p-2 sm:p-4 flex-1 lg:flex-grow overflow-hidden">
+            <Title className="text-white text-xs sm:text-sm border-b border-slate-800 pb-1 sm:pb-2 mb-1 sm:mb-2">Recent Events</Title>
+            <div className="overflow-y-auto max-h-24 sm:max-h-40">
               {events && events.length > 0 ? (
                 <List className="mt-0">
-                  {events.slice(0, 5).map((event: any, index: number) => (
-                    <ListItem key={event.id || index} className="py-2 border-slate-800">
-                      <span className="text-slate-400 text-xs truncate">{event.event_type?.replace(/_/g, ' ')}</span>
-                      <span className="text-slate-500 text-xs">
-                        {new Date(event.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </span>
-                    </ListItem>
-                  ))}
+                  {events.slice(0, 5).map((event: any, index: number) => {
+                    const eventDate = new Date(event.created_at);
+                    const today = new Date();
+                    const isToday = eventDate.toDateString() === today.toDateString();
+                    const timeStr = eventDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    const dateStr = isToday ? timeStr : `${eventDate.toLocaleDateString([], { month: 'short', day: 'numeric' })} ${timeStr}`;
+
+                    return (
+                      <ListItem key={event.id || index} className="py-1 sm:py-2 border-slate-800">
+                        <span className="text-slate-400 text-[10px] sm:text-xs truncate">{event.event_type?.replace(/_/g, ' ')}</span>
+                        <span className="text-slate-500 text-[10px] sm:text-xs">{dateStr}</span>
+                      </ListItem>
+                    );
+                  })}
                 </List>
               ) : (
                 <Text className="text-slate-500 text-xs text-center">No recent events</Text>
@@ -275,7 +288,7 @@ export default function DashboardClient({ latest, daily, history, events }: any)
               className="h-full w-full custom-chart"
               data={chartData}
               index="Time"
-              categories={["Water Level", "Pump Trigger", "High Alarm"]}
+              categories={["Level (in)", "Trigger (in)", "Alarm (in)"]}
               colors={["cyan", "lime", "fuchsia"]}
               showLegend={false}
               showGridLines={true}

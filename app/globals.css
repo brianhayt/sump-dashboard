@@ -56,11 +56,21 @@ body {
 /* Mobile Responsiveness */
 @media (max-width: 640px) {
   .custom-chart .recharts-cartesian-axis-tick-value {
-    font-size: 8px !important;
+    font-size: 7px !important;
   }
 
   .custom-chart .recharts-layer text {
-    font-size: 8px !important;
+    font-size: 7px !important;
+  }
+
+  /* Hide every other x-axis tick on mobile for less crowding */
+  .custom-chart .recharts-xAxis .recharts-cartesian-axis-tick:nth-child(odd) {
+    display: none;
+  }
+
+  /* Reduce y-axis width on mobile */
+  .custom-chart .recharts-yAxis {
+    width: 25px !important;
   }
 }
 
