@@ -1,6 +1,64 @@
 # Sump Pump Monitoring System
 
-ESP32-S2 firmware for monitoring sump pump systems with Supabase cloud logging.
+A complete IoT solution for monitoring residential sump pumps with real-time web dashboard.
+
+## Features
+
+- Real-time water level monitoring via eTape resistive sensor
+- 12V backup battery voltage monitoring
+- AC power outage detection
+- Backup pump alarm integration (PS-C22 controller)
+- Cloud data logging to Supabase
+- Web dashboard with historical charts
+- Daily statistics tracking (pump cycles, gallons pumped)
+- Self-calibrating sensor (learns from pump cycles)
+- Mobile-responsive design
+
+## Components
+
+- **ESP32-S2 Firmware** (`/arduino`) - Sensor reading and data upload
+- **Next.js Dashboard** (`/app`) - Real-time monitoring UI
+
+---
+
+## Web Dashboard
+
+### Dashboard Features
+
+- Live water level display with trend chart
+- Time range selector (1h, 6h, 12h, 24h)
+- Full-screen chart mode for wall-mounted displays
+- Battery voltage and AC power status indicators
+- Daily pump cycles and gallons counter
+- Recent events log
+- Mobile-responsive design
+
+### Statistics Page (`/stats`)
+
+- Weekly view with daily cycles/gallons bar chart
+- Monthly heatmap showing pump activity
+- All-time records (busiest day, total gallons)
+- Recent system events
+
+### Deployment (Vercel)
+
+1. Fork this repository
+2. Create a [Vercel](https://vercel.com) account and import the repo
+3. Add environment variables:
+   - `NEXT_PUBLIC_SUPABASE_URL` - Your Supabase project URL
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Your Supabase anon key
+4. Deploy
+
+### Local Development
+
+```bash
+npm install
+npm run dev
+```
+
+Visit http://localhost:3000
+
+---
 
 ## Hardware
 
@@ -72,26 +130,33 @@ GPIO 6 ──┬─────────────────────�
         GND
 ```
 
+---
+
 ## Calibration
 
-### eTape Calibration
+### Self-Calibrating Mode (Recommended)
 
-The eTape sensor resistance changes with water level. You need to calibrate for your specific sensor.
+The sensor automatically learns calibration values from pump cycles:
 
-1. **Measure empty resistance**: With eTape completely dry, watch the Serial monitor for the resistance reading (shown in parentheses after water level). Update `ETAPE_EMPTY_RESISTANCE`.
+- Records resistance when pump starts (high water point, ~4.5")
+- Records resistance when pump stops (low water point, ~0")
+- Uses rolling average of last 10 cycles for stability
+- Values persist in flash memory across reboots
 
-2. **Measure full resistance**: Submerge eTape to its maximum line and note the resistance. Update `ETAPE_FULL_RESISTANCE`.
+Initial default values are used until the system learns from actual pump cycles. No manual calibration required for most installations.
 
-3. **Measure sensor length**: Measure the active sensing area of your eTape in inches. Update `ETAPE_LENGTH_INCHES`.
+### Manual Calibration (Optional)
 
-4. **Measure series resistor**: Use a multimeter to measure your actual series resistor. Update `SERIES_RESISTOR`.
+If you need manual calibration or want to set initial values:
+
+1. **Measure empty resistance**: With eTape completely dry, watch the Serial monitor for the resistance reading. Update `DEFAULT_EMPTY_RESISTANCE`.
+
+2. **Measure trigger resistance**: Submerge eTape to your pump trigger level (~4.5") and note the resistance. Update `DEFAULT_TRIGGER_RESISTANCE`.
 
 ```cpp
-// eTape Calibration - UPDATE THESE VALUES
-#define SERIES_RESISTOR 990.0           // Measure your actual resistor
-#define ETAPE_EMPTY_RESISTANCE 1800.0   // Resistance when dry
-#define ETAPE_FULL_RESISTANCE 473.0     // Resistance when fully submerged  
-#define ETAPE_LENGTH_INCHES 12.4        // Active sensing length
+// Default calibration values (overwritten by self-learning)
+#define DEFAULT_EMPTY_RESISTANCE 1828.0   // Resistance at 0"
+#define DEFAULT_TRIGGER_RESISTANCE 1237.0 // Resistance at pump trigger level
 ```
 
 ### Pit Geometry Calibration
@@ -121,6 +186,8 @@ If your battery voltage readings are inaccurate:
 #define BATTERY_DIVIDER_RATIO 0.32      // Vout / Vbattery
 ```
 
+---
+
 ## Configuration
 
 ### WiFi
@@ -130,10 +197,17 @@ const char* WIFI_SSID = "YOUR_WIFI_SSID";
 const char* WIFI_PASSWORD = "YOUR_WIFI_PASSWORD";
 ```
 
+### Supabase
+
+```cpp
+const char* SUPABASE_URL = "YOUR_SUPABASE_URL";
+const char* SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
+```
+
 ### Alert Thresholds
 
 ```cpp
-#define HIGH_WATER_THRESHOLD 10.0       // Inches - high water alert
+#define HIGH_WATER_THRESHOLD 6.0        // Inches - high water alert
 #define LOW_BATTERY_THRESHOLD 11.5      // Volts - low battery alert
 #define AC_POWER_THRESHOLD 1000         // ADC counts for AC detection
 #define MAX_PUMP_RUNTIME_SEC 300        // Long pump run alert (seconds)
@@ -144,56 +218,58 @@ const char* WIFI_PASSWORD = "YOUR_WIFI_PASSWORD";
 If pump detection is too sensitive or not sensitive enough:
 
 ```cpp
-#define PUMP_DETECT_DROP_RATE 0.5       // Water drop rate to detect pump start
-#define PUMP_STOP_DROP_RATE 0.1         // Water drop rate to detect pump stop
+#define PUMP_DETECT_DROP_RATE 0.2       // Water drop rate to detect pump start
+#define PUMP_STOP_DROP_RATE 0.05        // Water drop rate to detect pump stop
 ```
+
+---
 
 ## Supabase Setup
 
-Your Supabase project needs these tables:
+Create a new Supabase project and add these tables:
 
 ### readings
+
 ```sql
 create table readings (
   id uuid default gen_random_uuid() primary key,
-  recorded_at timestamptz default now(),
+  created_at timestamptz default now(),
   water_level_inches float,
   battery_voltage float,
   backup_alarm_active boolean,
-  ac_power_present boolean,
+  ac_power_on boolean,
   pump_running boolean,
-  daily_runtime_minutes float,
-  daily_cycles integer,
-  daily_gallons float,
-  is_buffered boolean default false
+  wifi_rssi integer
 );
 ```
 
 ### events
+
 ```sql
 create table events (
   id uuid default gen_random_uuid() primary key,
-  occurred_at timestamptz default now(),
+  created_at timestamptz default now(),
   event_type text,
-  value float,
+  message text,
   water_level_inches float,
   battery_voltage float,
-  ac_power_present boolean
+  ac_power_on boolean
 );
 ```
 
 ### daily_summaries
+
 ```sql
 create table daily_summaries (
   id uuid default gen_random_uuid() primary key,
-  summary_date date unique,
+  date date unique,
   total_cycles integer,
-  total_runtime_minutes float,
   total_gallons float,
-  max_water_level float,
-  min_water_level float
+  max_water_level float
 );
 ```
+
+---
 
 ## Serial Monitor Output
 
@@ -214,9 +290,13 @@ STATUS: NORMAL - All systems OK
   Daily Runtime:  8.3 min
   WiFi:           Connected
   Supabase:       Ready
+
+  [CAL] Empty: 1825 ohms (10 samples) | Trigger: 1241 ohms (8 samples)
 ```
 
-The resistance reading in parentheses is useful for calibration.
+The `[CAL]` line shows learned calibration values and sample counts.
+
+---
 
 ## Event Types
 
@@ -231,13 +311,20 @@ The resistance reading in parentheses is useful for calibration.
 | `high_water` | Water > HIGH_WATER_THRESHOLD |
 | `low_battery` | Battery < LOW_BATTERY_THRESHOLD |
 | `long_pump_run` | Pump running > MAX_PUMP_RUNTIME_SEC |
+| `sensor_error` | ADC reading out of range |
+| `sensor_restored` | ADC reading returned to normal |
+
+---
 
 ## Offline Operation
 
 When WiFi is unavailable:
 - Readings are buffered locally (up to 100)
-- WiFi reconnection attempted every 30 seconds  
+- WiFi reconnection attempted every 30 seconds
 - Buffered readings uploaded when connection restored
+- Calibration values persist in flash memory
+
+---
 
 ## Arduino IDE Setup
 
@@ -252,6 +339,12 @@ When WiFi is unavailable:
    - **Adafruit ADS1X15** (by Adafruit)
    - **ArduinoJson** (by Benoit Blanchon)
 
-4. Update WiFi credentials and calibration values
+4. Update WiFi credentials, Supabase credentials, and pit geometry values
 
 5. Upload to ESP32-S2
+
+---
+
+## License
+
+MIT License - feel free to use and modify for your own sump pump monitoring needs.

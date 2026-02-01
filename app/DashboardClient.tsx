@@ -2,8 +2,9 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Card, LineChart, Title, Text, Metric, Flex, Badge, Grid, ProgressBar, List, ListItem } from "@tremor/react";
-import { BoltIcon, Battery100Icon, SignalIcon, ExclamationTriangleIcon, ArrowsPointingOutIcon, XMarkIcon } from "@heroicons/react/24/solid";
+import { BoltIcon, Battery100Icon, SignalIcon, ExclamationTriangleIcon, ArrowsPointingOutIcon, XMarkIcon, ChartBarSquareIcon } from "@heroicons/react/24/solid";
 
 // NEON COLORS CONFIGURATION
 const COLORS = {
@@ -81,14 +82,23 @@ export default function DashboardClient({ latest, daily, history, events }: any)
           </div>
         )}
         <div className={`rounded-lg px-4 py-2 border-l-4 ${systemHealthy ? "bg-emerald-950/40 border-emerald-500" : "bg-rose-950/40 border-rose-500"}`}>
-          <Flex justifyContent="between">
+          <Flex justifyContent="between" alignItems="center">
             <div>
               <h2 className={`text-xl font-bold ${systemHealthy ? "text-emerald-400" : "text-rose-400"}`}>
                 {systemHealthy ? "SYSTEM NORMAL" : "ATTENTION REQUIRED"}
               </h2>
               <Text className="text-slate-400 text-xs">Updated: {new Date(latest.created_at).toLocaleTimeString()}</Text>
             </div>
-            {latest.pump_running && <Badge color="cyan" className="animate-pulse">PUMP RUNNING</Badge>}
+            <div className="flex items-center gap-2">
+              {latest.pump_running && <Badge color="cyan" className="animate-pulse">PUMP RUNNING</Badge>}
+              <Link
+                href="/stats"
+                className="flex items-center gap-1 px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors text-sm"
+              >
+                <ChartBarSquareIcon className="h-4 w-4" />
+                <span className="hidden sm:inline">Stats</span>
+              </Link>
+            </div>
           </Flex>
         </div>
       </div>
