@@ -1,80 +1,82 @@
 import { createClient } from '@supabase/supabase-js'
-import { Card, Title, Text, List, ListItem, Badge } from "@tremor/react";
+import StatsClient from './StatsClient'
 
-export const revalidate = 0;
+export const revalidate = 60; // Revalidate every 60 seconds
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-// Helper to make timestamps readable (e.g., "Feb 1, 4:21 PM")
-function formatTime(isoString: string) {
-  return new Date(isoString).toLocaleString('en-US', {
-    month: 'short', day: 'numeric',
-    hour: 'numeric', minute: '2-digit'
-  });
+async function getStatsData() {
+  const today = new Date();
+  const sevenDaysAgo = new Date(today);
+  sevenDaysAgo.setDate(today.getDate() - 7);
+  const thirtyDaysAgo = new Date(today);
+  thirtyDaysAgo.setDate(today.getDate() - 30);
+
+  // Fetch all data in parallel
+  const [weekly, monthly, busiestDay, mostCyclesDay, events] = await Promise.all([
+    // Weekly data (last 7 days)
+    supabase
+      .from('daily_summaries')
+      .select('date, total_cycles, total_gallons')
+      .gte('date', sevenDaysAgo.toISOString().split('T')[0])
+      .order('date', { ascending: true }),
+
+    // Monthly data (last 30 days)
+    supabase
+      .from('daily_summaries')
+      .select('date, total_cycles, total_gallons')
+      .gte('date', thirtyDaysAgo.toISOString().split('T')[0])
+      .order('date', { ascending: true }),
+
+    // Busiest day (most gallons)
+    supabase
+      .from('daily_summaries')
+      .select('date, total_cycles, total_gallons')
+      .order('total_gallons', { ascending: false })
+      .limit(1),
+
+    // Day with most cycles
+    supabase
+      .from('daily_summaries')
+      .select('date, total_cycles, total_gallons')
+      .order('total_cycles', { ascending: false })
+      .limit(1),
+
+    // Recent events
+    supabase
+      .from('events')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(20)
+  ]);
+
+  // Fetch all-time totals separately
+  const { data: allData } = await supabase
+    .from('daily_summaries')
+    .select('total_cycles, total_gallons');
+
+  const allTimeTotals = (allData || []).reduce(
+    (acc, day) => ({
+      totalCycles: acc.totalCycles + (day.total_cycles || 0),
+      totalGallons: acc.totalGallons + (day.total_gallons || 0)
+    }),
+    { totalCycles: 0, totalGallons: 0 }
+  );
+
+  return {
+    weeklyData: weekly.data || [],
+    monthlyData: monthly.data || [],
+    busiestDay: busiestDay.data?.[0] || null,
+    mostCyclesDay: mostCyclesDay.data?.[0] || null,
+    allTimeTotals,
+    recentEvents: events.data || []
+  };
 }
 
 export default async function StatsPage() {
-  // Fetch latest 50 events
-  const { data: events } = await supabase
-    .from('events')
-    .select('*')
-    .order('created_at', { ascending: false }) // Newest at top
-    .limit(50);
-
-  return (
-    <main className="min-h-screen bg-slate-950 text-slate-200 p-4 md:p-8">
-      <div className="max-w-4xl mx-auto">
-        
-        {/* Header with Back Link */}
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold text-white">System Events Log</h1>
-          <a href="/" className="text-blue-400 hover:text-blue-300 text-sm">
-            &larr; Back to Dashboard
-          </a>
-        </div>
-
-        <Card className="bg-slate-900 border-slate-800 ring-0">
-          <Title className="text-white mb-4">Recent Pump Activity</Title>
-          <div className="overflow-hidden">
-            <List>
-              {events?.map((event) => (
-                <ListItem key={event.id} className="border-slate-800 py-4">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between w-full gap-2">
-                    
-                    {/* Event Type Badge */}
-                    <div className="flex items-center gap-3">
-                      <Badge 
-                        color={event.event_type === 'PUMP_START' ? 'cyan' : 'indigo'} 
-                        size="xs"
-                      >
-                        {event.event_type.replace('_', ' ')}
-                      </Badge>
-                      <span className="text-white font-mono text-sm">
-                        {formatTime(event.created_at)}
-                      </span>
-                    </div>
-
-                    {/* Water Level Detail */}
-                    <div className="text-slate-400 text-sm">
-                      Level: <span className="text-white font-bold">{event.water_level_inches?.toFixed(1)}"</span>
-                    </div>
-                  
-                  </div>
-                </ListItem>
-              ))}
-
-              {(!events || events.length === 0) && (
-                <div className="text-center text-slate-500 py-10">
-                  No events recorded yet.
-                </div>
-              )}
-            </List>
-          </div>
-        </Card>
-      </div>
-    </main>
-  );
+  const data = await getStatsData();
+  return <StatsClient {...data} />;
 }

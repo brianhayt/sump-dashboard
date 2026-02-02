@@ -24,7 +24,7 @@ const TIME_RANGES = [
 export default function DashboardClient({ latest, daily, history, events }: any) {
   const router = useRouter();
   const [now, setNow] = useState(Date.now());
-  const [selectedRange, setSelectedRange] = useState(24); // Default to 24h
+  const [selectedRange, setSelectedRange] = useState(1); // Default to 1h
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   // Auto-refresh data every 30 seconds
@@ -63,17 +63,9 @@ export default function DashboardClient({ latest, daily, history, events }: any)
     return readingTime >= cutoff;
   }) || [];
 
-  // Downsample data for longer time ranges to improve readability
-  // 1h: show all points, 6h: every 3rd, 12h: every 6th, 24h: every 12th
-  // Always include the last (most recent) point
-  const downsampleRate = selectedRange === 1 ? 1 : selectedRange === 6 ? 3 : selectedRange === 12 ? 6 : 12;
-  const downsampledHistory = filteredHistory.filter((_: any, index: number, arr: any[]) =>
-    index % downsampleRate === 0 || index === arr.length - 1
-  );
-
   // Chart Data Formatting (category names include units for tooltip display)
-  // Let JavaScript Date handle ISO 8601 parsing directly (same approach as events section)
-  const chartData = downsampledHistory.map((r: any) => {
+  // Show all data points - no downsampling
+  const chartData = filteredHistory.map((r: any) => {
     const date = new Date(r.created_at);
     return {
       Time: date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }),

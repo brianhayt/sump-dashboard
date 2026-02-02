@@ -38,7 +38,14 @@ async function getData() {
   // Reverse so the chart draws Left (Old) -> Right (New)
   const history = historyRaw ? historyRaw.reverse() : [];
 
-  return { latest, daily, history };
+  // 4. Get recent events for the event log
+  const { data: events } = await supabase
+    .from('events')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(10);
+
+  return { latest, daily, history, events };
 }
 
 export default async function Page() {
@@ -52,5 +59,5 @@ export default async function Page() {
     );
   }
 
-  return <DashboardClient latest={data.latest} daily={data.daily} history={data.history} />;
+  return <DashboardClient latest={data.latest} daily={data.daily} history={data.history} events={data.events || []} />;
 }
