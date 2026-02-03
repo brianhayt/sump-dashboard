@@ -119,77 +119,106 @@ export default function StatsClient({
             </Card>
             <Card className="bg-slate-900 border-slate-800 ring-0">
               <Text className="text-slate-400 text-xs uppercase">Daily Average</Text>
-              <Metric className="text-white">{weeklyAvgPerDay.cycles.toFixed(1)}</Metric>
-              <Text className="text-slate-500 text-sm">cycles / {Math.round(weeklyAvgPerDay.gallons)} gal</Text>
+              <Metric className="text-white">{weeklyAvgPerDay.cycles.toFixed(0)} cycles</Metric>
+              <Text className="text-slate-500 text-sm">{Math.round(weeklyAvgPerDay.gallons)} gallons</Text>
             </Card>
           </Grid>
 
-          {/* Weekly Bar Chart */}
-          <Card className="bg-slate-900 border-slate-800 ring-0 mb-6">
-            <Title className="text-white mb-4">Last 7 Days</Title>
-            {chartData.length > 0 ? (
-              <BarChart
-                className="h-72"
-                data={chartData}
-                index="date"
-                categories={["Cycles", "Gallons"]}
-                colors={["cyan", "lime"]}
-                yAxisWidth={40}
-                showAnimation={false}
-              />
-            ) : (
-              <Text className="text-slate-500 text-center py-10">No data available for the past week</Text>
-            )}
-          </Card>
+          {/* Weekly Bar Charts - Split into two for clarity */}
+          <Grid numItems={1} numItemsMd={2} className="gap-4 mb-6">
+            {/* Cycles Chart */}
+            <Card className="bg-slate-900 border-slate-800 ring-0">
+              <Title className="text-white text-sm mb-3">Daily Cycles</Title>
+              {chartData.length > 0 ? (
+                <BarChart
+                  className="h-48"
+                  data={chartData}
+                  index="date"
+                  categories={["Cycles"]}
+                  colors={["cyan"]}
+                  yAxisWidth={35}
+                  showAnimation={false}
+                />
+              ) : (
+                <Text className="text-slate-500 text-center py-8">No data</Text>
+              )}
+            </Card>
+
+            {/* Gallons Chart */}
+            <Card className="bg-slate-900 border-slate-800 ring-0">
+              <Title className="text-white text-sm mb-3">Daily Gallons</Title>
+              {chartData.length > 0 ? (
+                <BarChart
+                  className="h-48"
+                  data={chartData}
+                  index="date"
+                  categories={["Gallons"]}
+                  colors={["emerald"]}
+                  yAxisWidth={45}
+                  showAnimation={false}
+                />
+              ) : (
+                <Text className="text-slate-500 text-center py-8">No data</Text>
+              )}
+            </Card>
+          </Grid>
         </>
       ) : (
         <>
-          {/* Monthly Heatmap */}
+          {/* Monthly Heatmap - Calendar Style with Day Numbers */}
           <Card className="bg-slate-900 border-slate-800 ring-0 mb-6">
             <Title className="text-white mb-4">Last 30 Days Activity</Title>
-            {/* Constrained width container for heatmap */}
-            <div className="max-w-md">
-              <div className="mb-2 flex items-center gap-2 text-xs text-slate-500">
-                <span>Less</span>
-                <div className="flex gap-1">
-                  {[0.1, 0.3, 0.5, 0.7, 1].map((intensity, i) => (
-                    <div
-                      key={i}
-                      className="w-3 h-3 rounded-sm"
-                      style={{ backgroundColor: getHeatColor(intensity) }}
-                    />
-                  ))}
-                </div>
-                <span>More</span>
-              </div>
-              <div className="grid grid-cols-7 gap-1 mb-2">
-                {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
-                  <div key={day} className="text-center text-xs text-slate-600 py-1">
-                    {day}
-                  </div>
+            {/* Legend */}
+            <div className="flex items-center gap-2 mb-3 text-xs text-slate-500">
+              <span>Less</span>
+              <div className="flex gap-0.5">
+                {["#1e293b", "#134e4a", "#0d9488", "#14b8a6", "#2dd4bf"].map((color) => (
+                  <div key={color} className="w-4 h-4 rounded-sm" style={{ backgroundColor: color }} />
                 ))}
               </div>
-              <div className="grid grid-cols-7 gap-1">
-                {heatmapData.map((day, index) => (
-                  <div
-                    key={index}
-                    className={`w-8 h-8 sm:w-10 sm:h-10 rounded-sm cursor-default ${
-                      day.isEmpty ? "bg-slate-800/50" : ""
-                    }`}
-                    style={
-                      !day.isEmpty
-                        ? { backgroundColor: getHeatColor((day.gallons || 0) / maxGallons) }
+              <span>More</span>
+            </div>
+
+            {/* Calendar Grid */}
+            <div className="grid grid-cols-7 gap-1">
+              {/* Weekday Headers */}
+              {["S", "M", "T", "W", "T", "F", "S"].map((day, i) => (
+                <div key={i} className="text-center text-[10px] text-slate-600 font-medium pb-1">
+                  {day}
+                </div>
+              ))}
+
+              {/* Day Cells with Numbers */}
+              {heatmapData.map((day, index) => (
+                <div
+                  key={index}
+                  className={`relative w-9 h-9 sm:w-11 sm:h-11 rounded-sm flex items-center justify-center cursor-default ${
+                    day.isEmpty ? "bg-slate-800/30" : ""
+                  }`}
+                  style={
+                    !day.isEmpty
+                      ? { backgroundColor: getHeatColorImproved((day.gallons || 0) / maxGallons) }
                       : undefined
                   }
                   title={
                     day.isEmpty
                       ? ""
-                      : `${day.date}: ${day.gallons} gal, ${day.cycles} cycles`
+                      : `${formatDateLong(day.date)}: ${Math.round(day.gallons)} gal, ${day.cycles} cycles`
                   }
-                />
+                >
+                  {!day.isEmpty && (
+                    <span className="text-[11px] sm:text-xs font-medium text-white/80">
+                      {new Date(day.date + "T00:00:00").getDate()}
+                    </span>
+                  )}
+                </div>
               ))}
-              </div>
             </div>
+
+            {/* Month Indicator */}
+            <Text className="text-slate-600 text-xs mt-3">
+              {new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" })}
+            </Text>
           </Card>
 
           {/* Records Section */}
@@ -290,6 +319,16 @@ function getHeatColor(intensity: number): string {
   if (intensity < 0.5) return "#0e7490"; // cyan-700
   if (intensity < 0.75) return "#06b6d4"; // cyan-500
   return "#22d3ee"; // cyan-400
+}
+
+// Improved heat color with teal palette for better visibility
+function getHeatColorImproved(intensity: number): string {
+  if (intensity <= 0) return "#1e293b";      // slate-800 (visible empty)
+  if (intensity < 0.2) return "#134e4a";     // teal-900
+  if (intensity < 0.4) return "#0d9488";     // teal-600
+  if (intensity < 0.6) return "#14b8a6";     // teal-500
+  if (intensity < 0.8) return "#2dd4bf";     // teal-400
+  return "#5eead4";                           // teal-300 (brightest)
 }
 
 interface HeatmapDay {

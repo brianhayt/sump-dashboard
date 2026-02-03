@@ -43,7 +43,17 @@ body {
   border-radius: 4px;
 }
 
-/* Custom Chart Text Overrides */
+/* Chart Text Overrides - Make axis labels visible on dark background */
+/* Global rule for ALL charts (including stats page bar chart) */
+.recharts-cartesian-axis-tick-value {
+  fill: #94a3b8 !important; /* Slate-400 color */
+}
+
+.recharts-cartesian-axis-line {
+  stroke: #475569 !important; /* Slate-600 for axis lines */
+}
+
+/* Custom chart specific overrides */
 .custom-chart .recharts-cartesian-axis-tick-value {
   fill: #94a3b8 !important; /* Slate-400 color */
   font-size: 10px;
