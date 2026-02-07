@@ -18,13 +18,19 @@ async function getData() {
     .limit(1)
     .single();
 
-  // 2. Get today's stats (from daily_summaries if available, else 0)
-  const { data: daily } = await supabase
-    .from('daily_summaries')
-    .select('*')
-    .order('date', { ascending: false })
-    .limit(1)
-    .single();
+  // 2. Get today's pump cycles by counting events (reliable source of truth)
+  // daily_summaries may have duplicate rows if upsert isn't working, so compute from events instead
+  const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+  const { count: todayCycles } = await supabase
+    .from('events')
+    .select('*', { count: 'exact', head: true })
+    .eq('event_type', 'pump_cycle_end')
+    .gte('created_at', `${todayStr}T00:00:00-05:00`);
+
+  const daily = {
+    total_cycles: todayCycles || 0,
+    total_gallons: Math.round((todayCycles || 0) * 4.5),
+  };
 
   // 3. Get History for Graph (Fixing the "3AM Cutoff")
   // We fetch the NEWEST 2000 records first, then reverse them.
