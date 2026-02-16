@@ -84,34 +84,6 @@ body {
   }
 }
 
-/* Environment chart line colors (Temperature & Humidity) */
-.custom-chart-env .recharts-line:nth-child(1) .recharts-line-curve {
-  stroke: #f97316 !important; /* Orange - Temperature */
-}
-
-.custom-chart-env .recharts-line:nth-child(2) .recharts-line-curve {
-  stroke: #a78bfa !important; /* Violet - Humidity */
-}
-
-.custom-chart-env .recharts-layer path[stroke] {
-  stroke-width: 2 !important;
-}
-
-.custom-chart-env .recharts-cartesian-axis-tick-value {
-  fill: #94a3b8 !important;
-  font-size: 10px;
-}
-
-@media (max-width: 640px) {
-  .custom-chart-env .recharts-cartesian-axis-tick-value {
-    font-size: 7px !important;
-  }
-
-  .custom-chart-env .recharts-xAxis .recharts-cartesian-axis-tick:nth-child(odd) {
-    display: none;
-  }
-}
-
 /* Fullscreen mode styles */
 .fullscreen-chart {
   position: fixed;

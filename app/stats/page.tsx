@@ -20,28 +20,28 @@ async function getStatsData() {
     // Weekly data (last 7 days)
     supabase
       .from('daily_summaries')
-      .select('date, total_cycles, total_gallons')
+      .select('date, total_cycles, total_gallons, avg_temperature_f, avg_humidity_pct')
       .gte('date', sevenDaysAgo.toISOString().split('T')[0])
       .order('date', { ascending: true }),
 
     // Monthly data (last 30 days)
     supabase
       .from('daily_summaries')
-      .select('date, total_cycles, total_gallons')
+      .select('date, total_cycles, total_gallons, avg_temperature_f, avg_humidity_pct')
       .gte('date', thirtyDaysAgo.toISOString().split('T')[0])
       .order('date', { ascending: true }),
 
     // Busiest day (most gallons)
     supabase
       .from('daily_summaries')
-      .select('date, total_cycles, total_gallons')
+      .select('date, total_cycles, total_gallons, avg_temperature_f, avg_humidity_pct')
       .order('total_gallons', { ascending: false })
       .limit(1),
 
     // Day with most cycles
     supabase
       .from('daily_summaries')
-      .select('date, total_cycles, total_gallons')
+      .select('date, total_cycles, total_gallons, avg_temperature_f, avg_humidity_pct')
       .order('total_cycles', { ascending: false })
       .limit(1),
 

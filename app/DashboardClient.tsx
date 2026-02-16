@@ -77,18 +77,6 @@ export default function DashboardClient({ latest, daily, history, events }: any)
     };
   });
 
-  // Environment chart data (temperature & humidity)
-  const envChartData = filteredHistory
-    .filter((r: any) => r.temperature_f != null)
-    .map((r: any) => {
-      const date = new Date(r.created_at);
-      return {
-        Time: date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }),
-        "Temp (\u00b0F)": r.temperature_f,
-        "Humidity (%)": r.humidity_pct,
-      };
-    });
-
   return (
     <main className="min-h-screen bg-slate-950 text-slate-200 p-2 md:p-4 flex flex-col font-sans">
       
@@ -194,101 +182,66 @@ export default function DashboardClient({ latest, daily, history, events }: any)
 
       {/* 3. CHART & STATS */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-2 sm:gap-4">
-        {/* Charts column */}
-        <div className="lg:col-span-3 flex flex-col gap-2 sm:gap-4">
-          {/* Water Level Chart */}
-          <Card className="bg-slate-900 border-slate-800 ring-0 flex flex-col">
-            {/* Chart Header - Responsive Layout */}
-            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-2">
-              {/* Title + Time Range */}
-              <div className="flex items-center justify-between sm:justify-start gap-2 sm:gap-4">
-                <Title className="text-white text-sm sm:text-base whitespace-nowrap">Water Level</Title>
-                {/* Time Range Selector */}
-                <div className="flex gap-1">
-                  {TIME_RANGES.map((range) => (
-                    <button
-                      key={range.hours}
-                      onClick={() => setSelectedRange(range.hours)}
-                      className={`px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs rounded transition-colors ${
-                        selectedRange === range.hours
-                          ? "bg-cyan-600 text-white"
-                          : "bg-slate-800 text-slate-400 hover:bg-slate-700"
-                      }`}
-                    >
-                      {range.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              {/* Legend + Fullscreen */}
-              <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-4">
-                {/* Custom Legend - Compact on mobile */}
-                <div className="flex gap-2 sm:gap-4 text-[8px] sm:text-[10px] uppercase tracking-wider sm:tracking-widest font-bold">
-                  <span className="flex items-center gap-1"><span className="w-2 h-2 sm:w-3 sm:h-3 rounded-sm" style={{backgroundColor: COLORS.level}}></span> Level</span>
-                  <span className="flex items-center gap-1"><span className="w-2 h-2 sm:w-3 sm:h-3 rounded-sm" style={{backgroundColor: COLORS.trigger}}></span> Trigger</span>
-                  <span className="flex items-center gap-1"><span className="w-2 h-2 sm:w-3 sm:h-3 rounded-sm" style={{backgroundColor: COLORS.alarm}}></span> Alarm</span>
-                </div>
-                {/* Fullscreen Button */}
-                <button
-                  onClick={() => setIsFullscreen(true)}
-                  className="p-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors"
-                  title="Fullscreen"
-                >
-                  <ArrowsPointingOutIcon className="h-4 w-4" />
-                </button>
+        <Card className="bg-slate-900 border-slate-800 ring-0 lg:col-span-3 flex flex-col">
+          {/* Chart Header - Responsive Layout */}
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-2">
+            {/* Title + Time Range */}
+            <div className="flex items-center justify-between sm:justify-start gap-2 sm:gap-4">
+              <Title className="text-white text-sm sm:text-base whitespace-nowrap">Water Level</Title>
+              {/* Time Range Selector */}
+              <div className="flex gap-1">
+                {TIME_RANGES.map((range) => (
+                  <button
+                    key={range.hours}
+                    onClick={() => setSelectedRange(range.hours)}
+                    className={`px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs rounded transition-colors ${
+                      selectedRange === range.hours
+                        ? "bg-cyan-600 text-white"
+                        : "bg-slate-800 text-slate-400 hover:bg-slate-700"
+                    }`}
+                  >
+                    {range.label}
+                  </button>
+                ))}
               </div>
             </div>
-
-            <div className="h-[250px] sm:h-[350px] lg:h-[400px]">
-              <LineChart
-                className="h-full w-full custom-chart"
-                data={chartData}
-                index="Time"
-                categories={["Level (in)", "Trigger (in)", "Alarm (in)"]}
-                colors={["cyan", "lime", "fuchsia"]}
-                showLegend={false}
-                showGridLines={true}
-                yAxisWidth={30}
-                minValue={0}
-                maxValue={10}
-                autoMinValue={false}
-                showAnimation={false}
-                connectNulls={true}
-              />
+            {/* Legend + Fullscreen */}
+            <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-4">
+              {/* Custom Legend - Compact on mobile */}
+              <div className="flex gap-2 sm:gap-4 text-[8px] sm:text-[10px] uppercase tracking-wider sm:tracking-widest font-bold">
+                <span className="flex items-center gap-1"><span className="w-2 h-2 sm:w-3 sm:h-3 rounded-sm" style={{backgroundColor: COLORS.level}}></span> Level</span>
+                <span className="flex items-center gap-1"><span className="w-2 h-2 sm:w-3 sm:h-3 rounded-sm" style={{backgroundColor: COLORS.trigger}}></span> Trigger</span>
+                <span className="flex items-center gap-1"><span className="w-2 h-2 sm:w-3 sm:h-3 rounded-sm" style={{backgroundColor: COLORS.alarm}}></span> Alarm</span>
+              </div>
+              {/* Fullscreen Button */}
+              <button
+                onClick={() => setIsFullscreen(true)}
+                className="p-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors"
+                title="Fullscreen"
+              >
+                <ArrowsPointingOutIcon className="h-4 w-4" />
+              </button>
             </div>
-          </Card>
+          </div>
 
-          {/* Temperature & Humidity Chart */}
-          {envChartData.length > 0 && (
-            <Card className="bg-slate-900 border-slate-800 ring-0">
-              <div className="flex items-center justify-between mb-2">
-                <Title className="text-white text-sm sm:text-base">Temperature & Humidity</Title>
-                <div className="flex gap-2 sm:gap-4 text-[8px] sm:text-[10px] uppercase tracking-wider sm:tracking-widest font-bold">
-                  <span className="flex items-center gap-1">
-                    <span className="w-2 h-2 sm:w-3 sm:h-3 rounded-sm" style={{backgroundColor: COLORS.temperature}}></span> Temp
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <span className="w-2 h-2 sm:w-3 sm:h-3 rounded-sm" style={{backgroundColor: COLORS.humidity}}></span> Humidity
-                  </span>
-                </div>
-              </div>
-              <div className="h-[150px] sm:h-[200px]">
-                <LineChart
-                  className="h-full w-full custom-chart-env"
-                  data={envChartData}
-                  index="Time"
-                  categories={["Temp (\u00b0F)", "Humidity (%)"]}
-                  colors={["orange", "violet"]}
-                  showLegend={false}
-                  showGridLines={true}
-                  yAxisWidth={30}
-                  showAnimation={false}
-                  connectNulls={true}
-                />
-              </div>
-            </Card>
-          )}
-        </div>
+          <div className="h-[250px] sm:h-[350px] lg:h-[400px]">
+            <LineChart
+              className="h-full w-full custom-chart"
+              data={chartData}
+              index="Time"
+              categories={["Level (in)", "Trigger (in)", "Alarm (in)"]}
+              colors={["cyan", "lime", "fuchsia"]}
+              showLegend={false}
+              showGridLines={true}
+              yAxisWidth={30}
+              minValue={0}
+              maxValue={10}
+              autoMinValue={false}
+              showAnimation={false}
+              connectNulls={true}
+            />
+          </div>
+        </Card>
 
         {/* DAILY STATS & EVENTS - Horizontal on mobile, vertical on desktop */}
         <div className="flex flex-row lg:flex-col gap-2 sm:gap-4">

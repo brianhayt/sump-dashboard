@@ -9,6 +9,8 @@ interface DaySummary {
   date: string;
   total_cycles: number;
   total_gallons: number;
+  avg_temperature_f: number | null;
+  avg_humidity_pct: number | null;
 }
 
 interface Event {
@@ -57,6 +59,15 @@ export default function StatsClient({
     Cycles: day.total_cycles || 0,
     Gallons: Math.round(day.total_gallons || 0),
   }));
+
+  // Format weekly temp/humidity data for bar charts
+  const envChartData = weeklyData
+    .filter((day) => day.avg_temperature_f != null)
+    .map((day) => ({
+      date: formatDateShort(day.date),
+      "Avg Temp (\u00b0F)": Math.round(day.avg_temperature_f || 0),
+      "Avg Humidity (%)": Math.round(day.avg_humidity_pct || 0),
+    }));
 
   // Generate heatmap data for last 30 days
   const heatmapData = generateHeatmapData(monthlyData);
@@ -162,6 +173,39 @@ export default function StatsClient({
               )}
             </Card>
           </Grid>
+
+          {/* Temperature & Humidity Charts */}
+          {envChartData.length > 0 && (
+            <Grid numItems={1} numItemsMd={2} className="gap-4 mb-6">
+              {/* Temperature Chart */}
+              <Card className="bg-slate-900 border-slate-800 ring-0">
+                <Title className="text-white text-sm mb-3">Daily Avg Temperature</Title>
+                <BarChart
+                  className="h-48"
+                  data={envChartData}
+                  index="date"
+                  categories={["Avg Temp (\u00b0F)"]}
+                  colors={["orange"]}
+                  yAxisWidth={35}
+                  showAnimation={false}
+                />
+              </Card>
+
+              {/* Humidity Chart */}
+              <Card className="bg-slate-900 border-slate-800 ring-0">
+                <Title className="text-white text-sm mb-3">Daily Avg Humidity</Title>
+                <BarChart
+                  className="h-48"
+                  data={envChartData}
+                  index="date"
+                  categories={["Avg Humidity (%)"]}
+                  colors={["violet"]}
+                  yAxisWidth={35}
+                  showAnimation={false}
+                />
+              </Card>
+            </Grid>
+          )}
         </>
       ) : (
         <>

@@ -37,7 +37,7 @@ async function getData() {
   // This guarantees we see "Now" even if there are 5000 rows in the DB.
   const { data: historyRaw } = await supabase
     .from('readings')
-    .select('created_at, water_level_inches, pump_running, temperature_f, humidity_pct')
+    .select('created_at, water_level_inches, pump_running')
     .order('created_at', { ascending: false }) // Newest first
     .limit(2000); // 2000 minutes = ~33 hours history
 
