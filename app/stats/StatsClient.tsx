@@ -20,6 +20,11 @@ interface Event {
   message?: string;
 }
 
+interface PumpInterval {
+  date: string;
+  avgMinutesBetweenCycles: number | null;
+}
+
 interface StatsClientProps {
   weeklyData: DaySummary[];
   monthlyData: DaySummary[];
@@ -27,6 +32,7 @@ interface StatsClientProps {
   mostCyclesDay: DaySummary | null;
   allTimeTotals: { totalCycles: number; totalGallons: number };
   recentEvents: Event[];
+  pumpIntervals: PumpInterval[];
 }
 
 type ViewMode = "weekly" | "monthly";
@@ -38,6 +44,7 @@ export default function StatsClient({
   mostCyclesDay,
   allTimeTotals,
   recentEvents,
+  pumpIntervals,
 }: StatsClientProps) {
   const [viewMode, setViewMode] = useState<ViewMode>("weekly");
 
@@ -67,6 +74,14 @@ export default function StatsClient({
       date: formatDateShort(day.date),
       "Avg Temp (\u00b0F)": Math.round(day.avg_temperature_f || 0),
       "Avg Humidity (%)": Math.round(day.avg_humidity_pct || 0),
+    }));
+
+  // Format pump interval data for bar chart
+  const pumpIntervalChartData = pumpIntervals
+    .filter((d) => d.avgMinutesBetweenCycles != null)
+    .map((d) => ({
+      date: formatDateShort(d.date),
+      "Avg Min Between Cycles": d.avgMinutesBetweenCycles,
     }));
 
   // Generate heatmap data for last 30 days
@@ -210,6 +225,24 @@ export default function StatsClient({
               </Card>
             </Grid>
           )}
+
+          {/* Avg Time Between Pump Cycles */}
+          {pumpIntervalChartData.length > 0 && (
+            <Card className="bg-slate-900 border-slate-800 ring-0 mb-6">
+              <Title className="text-white text-sm mb-3">Avg Time Between Pump Cycles</Title>
+              <div className="pump-interval-chart">
+                <BarChart
+                  className="h-48"
+                  data={pumpIntervalChartData}
+                  index="date"
+                  categories={["Avg Min Between Cycles"]}
+                  colors={["amber"]}
+                  yAxisWidth={35}
+                  showAnimation={false}
+                />
+              </div>
+            </Card>
+          )}
         </>
       ) : (
         <>
@@ -228,10 +261,10 @@ export default function StatsClient({
             </div>
 
             {/* Calendar Grid */}
-            <div className="grid gap-1 mx-auto" style={{ gridTemplateColumns: 'repeat(7, auto)' }}>
+            <div className="grid grid-cols-7 gap-1 w-fit mx-auto">
               {/* Weekday Headers */}
               {["S", "M", "T", "W", "T", "F", "S"].map((day, i) => (
-                <div key={i} className="text-center text-[10px] text-slate-600 font-medium pb-1">
+                <div key={i} className="w-9 sm:w-11 text-center text-[10px] text-slate-600 font-medium pb-1">
                   {day}
                 </div>
               ))}

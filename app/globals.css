@@ -34,6 +34,10 @@
   fill: #8b5cf6 !important; /* Violet - Humidity */
 }
 
+.pump-interval-chart .recharts-bar-rectangle rect {
+  fill: #f59e0b !important; /* Amber - Pump Interval */
+}
+
 /* Force the defaults to be Dark Theme (Slate-950 background, Slate-100 text) */
 body {
   background-color: #020617; /* matches bg-slate-950 */

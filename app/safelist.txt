@@ -16,5 +16,7 @@ fill-orange-400 fill-orange-500 fill-orange-600
 fill-violet-400 fill-violet-500 fill-violet-600
 stroke-orange-400 stroke-orange-500 stroke-orange-600
 stroke-violet-400 stroke-violet-500 stroke-violet-600
-bg-orange-500 bg-violet-500
-text-orange-500 text-violet-500
+bg-orange-500 bg-violet-500 bg-amber-500
+text-orange-500 text-violet-500 text-amber-500
+fill-amber-400 fill-amber-500 fill-amber-600
+stroke-amber-400 stroke-amber-500 stroke-amber-600
