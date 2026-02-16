@@ -180,29 +180,33 @@ export default function StatsClient({
               {/* Temperature Chart */}
               <Card className="bg-slate-900 border-slate-800 ring-0">
                 <Title className="text-white text-sm mb-3">Daily Avg Temperature</Title>
-                <BarChart
-                  className="h-48"
-                  data={envChartData}
-                  index="date"
-                  categories={["Avg Temp (\u00b0F)"]}
-                  colors={["orange"]}
-                  yAxisWidth={35}
-                  showAnimation={false}
-                />
+                <div className="temp-bar-chart">
+                  <BarChart
+                    className="h-48"
+                    data={envChartData}
+                    index="date"
+                    categories={["Avg Temp (\u00b0F)"]}
+                    colors={["orange"]}
+                    yAxisWidth={35}
+                    showAnimation={false}
+                  />
+                </div>
               </Card>
 
               {/* Humidity Chart */}
               <Card className="bg-slate-900 border-slate-800 ring-0">
                 <Title className="text-white text-sm mb-3">Daily Avg Humidity</Title>
-                <BarChart
-                  className="h-48"
-                  data={envChartData}
-                  index="date"
-                  categories={["Avg Humidity (%)"]}
-                  colors={["violet"]}
-                  yAxisWidth={35}
-                  showAnimation={false}
-                />
+                <div className="humidity-bar-chart">
+                  <BarChart
+                    className="h-48"
+                    data={envChartData}
+                    index="date"
+                    categories={["Avg Humidity (%)"]}
+                    colors={["violet"]}
+                    yAxisWidth={35}
+                    showAnimation={false}
+                  />
+                </div>
               </Card>
             </Grid>
           )}
@@ -224,7 +228,7 @@ export default function StatsClient({
             </div>
 
             {/* Calendar Grid */}
-            <div className="grid grid-cols-7 gap-1">
+            <div className="grid gap-1 mx-auto" style={{ gridTemplateColumns: 'repeat(7, auto)' }}>
               {/* Weekday Headers */}
               {["S", "M", "T", "W", "T", "F", "S"].map((day, i) => (
                 <div key={i} className="text-center text-[10px] text-slate-600 font-medium pb-1">

@@ -12,3 +12,9 @@ fill-emerald-400 fill-emerald-500 fill-emerald-600
 fill-rose-400 fill-rose-500 fill-rose-600
 bg-cyan-500 bg-lime-500 bg-fuchsia-500
 text-cyan-500 text-lime-500 text-fuchsia-500
+fill-orange-400 fill-orange-500 fill-orange-600
+fill-violet-400 fill-violet-500 fill-violet-600
+stroke-orange-400 stroke-orange-500 stroke-orange-600
+stroke-violet-400 stroke-violet-500 stroke-violet-600
+bg-orange-500 bg-violet-500
+text-orange-500 text-violet-500

@@ -25,6 +25,15 @@
   stroke: #d946ef !important; /* Fuchsia - High Alarm */
 }
 
+/* Force bar chart fill colors - fixes Tailwind v4 class purging for orange/violet */
+.temp-bar-chart .recharts-bar-rectangle rect {
+  fill: #f97316 !important; /* Orange - Temperature */
+}
+
+.humidity-bar-chart .recharts-bar-rectangle rect {
+  fill: #8b5cf6 !important; /* Violet - Humidity */
+}
+
 /* Force the defaults to be Dark Theme (Slate-950 background, Slate-100 text) */
 body {
   background-color: #020617; /* matches bg-slate-950 */
