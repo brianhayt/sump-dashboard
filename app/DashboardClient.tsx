@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Card, LineChart, Title, Text, Metric, Flex, Badge, Grid, ProgressBar, List, ListItem } from "@tremor/react";
+import { Card, LineChart, Title, Text, Metric, Flex, Badge, ProgressBar, List, ListItem } from "@tremor/react";
 import { BoltIcon, Battery100Icon, SignalIcon, ExclamationTriangleIcon, ArrowsPointingOutIcon, XMarkIcon, ChartBarSquareIcon, SunIcon } from "@heroicons/react/24/solid";
 
 // NEON COLORS CONFIGURATION
@@ -110,7 +110,7 @@ export default function DashboardClient({ latest, daily, history, events }: any)
       </div>
 
       {/* 2. METRICS ROW */}
-      <Grid numItems={2} numItemsSm={3} numItemsLg={6} className="gap-3 flex-none mb-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 flex-none mb-3">
         {/* Water Level */}
         <Card className="bg-slate-900 border-slate-800 p-3 ring-0">
           <Text className="text-slate-400 text-xs uppercase">Level</Text>
@@ -178,7 +178,7 @@ export default function DashboardClient({ latest, daily, history, events }: any)
             </Metric>
           </Flex>
         </Card>
-      </Grid>
+      </div>
 
       {/* 3. CHART & STATS */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-2 sm:gap-4">
