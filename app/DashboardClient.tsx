@@ -10,7 +10,6 @@ import { BoltIcon, Battery100Icon, SignalIcon, ExclamationTriangleIcon, ArrowsPo
 const COLORS = {
   level: "#06b6d4",       // Cyan (Bright Blue)
   trigger: "#84cc16",     // Lime (Bright Green)
-  alarm: "#d946ef",       // Fuchsia (Bright Pink)
   temperature: "#f97316", // Orange (Warm)
   humidity: "#a78bfa",    // Violet (Moisture)
 };
@@ -72,8 +71,7 @@ export default function DashboardClient({ latest, daily, history, events }: any)
     return {
       Time: date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }),
       "Level (in)": r.water_level_inches,
-      "Trigger (in)": 4.5,
-      "Alarm (in)": 6.0
+      "Trigger (in)": 4.5
     };
   });
 
@@ -211,7 +209,6 @@ export default function DashboardClient({ latest, daily, history, events }: any)
               <div className="flex gap-2 sm:gap-4 text-[8px] sm:text-[10px] uppercase tracking-wider sm:tracking-widest font-bold">
                 <span className="flex items-center gap-1"><span className="w-2 h-2 sm:w-3 sm:h-3 rounded-sm" style={{backgroundColor: COLORS.level}}></span> Level</span>
                 <span className="flex items-center gap-1"><span className="w-2 h-2 sm:w-3 sm:h-3 rounded-sm" style={{backgroundColor: COLORS.trigger}}></span> Trigger</span>
-                <span className="flex items-center gap-1"><span className="w-2 h-2 sm:w-3 sm:h-3 rounded-sm" style={{backgroundColor: COLORS.alarm}}></span> Alarm</span>
               </div>
               {/* Fullscreen Button */}
               <button
@@ -229,13 +226,13 @@ export default function DashboardClient({ latest, daily, history, events }: any)
               className="h-full w-full custom-chart"
               data={chartData}
               index="Time"
-              categories={["Level (in)", "Trigger (in)", "Alarm (in)"]}
-              colors={["cyan", "lime", "fuchsia"]}
+              categories={["Level (in)", "Trigger (in)"]}
+              colors={["cyan", "lime"]}
               showLegend={false}
               showGridLines={true}
               yAxisWidth={30}
               minValue={0}
-              maxValue={10}
+              maxValue={8}
               autoMinValue={false}
               showAnimation={false}
               connectNulls={true}
@@ -317,7 +314,6 @@ export default function DashboardClient({ latest, daily, history, events }: any)
               <div className="flex gap-6 text-xs uppercase tracking-widest font-bold">
                 <span className="flex items-center gap-2"><span className="w-4 h-4 rounded-sm" style={{backgroundColor: COLORS.level}}></span> Level</span>
                 <span className="flex items-center gap-2"><span className="w-4 h-4 rounded-sm" style={{backgroundColor: COLORS.trigger}}></span> Trigger</span>
-                <span className="flex items-center gap-2"><span className="w-4 h-4 rounded-sm" style={{backgroundColor: COLORS.alarm}}></span> Alarm</span>
               </div>
               {/* Current Level */}
               <div className="text-cyan-400 text-xl font-mono">
@@ -338,13 +334,13 @@ export default function DashboardClient({ latest, daily, history, events }: any)
               className="h-full w-full custom-chart"
               data={chartData}
               index="Time"
-              categories={["Level (in)", "Trigger (in)", "Alarm (in)"]}
-              colors={["cyan", "lime", "fuchsia"]}
+              categories={["Level (in)", "Trigger (in)"]}
+              colors={["cyan", "lime"]}
               showLegend={false}
               showGridLines={true}
               yAxisWidth={50}
               minValue={0}
-              maxValue={10}
+              maxValue={8}
               autoMinValue={false}
               showAnimation={false}
               connectNulls={true}

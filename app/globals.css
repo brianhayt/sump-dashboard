@@ -21,23 +21,6 @@
   stroke: #84cc16 !important; /* Lime - Pump Trigger */
 }
 
-.custom-chart .recharts-line:nth-child(3) .recharts-line-curve {
-  stroke: #d946ef !important; /* Fuchsia - High Alarm */
-}
-
-/* Force bar chart fill colors - fixes Tailwind v4 class purging for orange/violet */
-.temp-bar-chart .recharts-bar-rectangle rect {
-  fill: #f97316 !important; /* Orange - Temperature */
-}
-
-.humidity-bar-chart .recharts-bar-rectangle rect {
-  fill: #8b5cf6 !important; /* Violet - Humidity */
-}
-
-.pump-interval-chart .recharts-bar-rectangle rect {
-  fill: #f59e0b !important; /* Amber - Pump Interval */
-}
-
 /* Force the defaults to be Dark Theme (Slate-950 background, Slate-100 text) */
 body {
   background-color: #020617; /* matches bg-slate-950 */

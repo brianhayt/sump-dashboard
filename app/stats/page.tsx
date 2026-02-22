@@ -66,6 +66,7 @@ async function getStatsData() {
       .eq('event_type', 'pump_cycle_end')
       .gte('created_at', sevenDaysAgo.toISOString())
       .order('created_at', { ascending: true })
+      .limit(5000)
   ]);
 
   const allTimeTotals = (allTimeResult.data || []).reduce(

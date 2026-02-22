@@ -67,22 +67,25 @@ export default function StatsClient({
     Gallons: Math.round(day.total_gallons || 0),
   }));
 
-  // Format weekly temp/humidity data for bar charts
-  const envChartData = weeklyData
-    .filter((day) => day.avg_temperature_f != null)
-    .map((day) => ({
-      date: formatDateShort(day.date),
-      "Avg Temp (\u00b0F)": Math.round(day.avg_temperature_f || 0),
-      "Avg Humidity (%)": Math.round(day.avg_humidity_pct || 0),
-    }));
+  // Compute weekly environment summary stats
+  const tempValues = weeklyData.filter(d => d.avg_temperature_f != null).map(d => d.avg_temperature_f!);
+  const humValues = weeklyData.filter(d => d.avg_humidity_pct != null).map(d => d.avg_humidity_pct!);
+  const weeklyEnv = {
+    tempAvg: tempValues.length > 0 ? Math.round(tempValues.reduce((s, v) => s + v, 0) / tempValues.length) : null,
+    tempMin: tempValues.length > 0 ? Math.round(Math.min(...tempValues)) : null,
+    tempMax: tempValues.length > 0 ? Math.round(Math.max(...tempValues)) : null,
+    humAvg: humValues.length > 0 ? Math.round(humValues.reduce((s, v) => s + v, 0) / humValues.length) : null,
+    humMin: humValues.length > 0 ? Math.round(Math.min(...humValues)) : null,
+    humMax: humValues.length > 0 ? Math.round(Math.max(...humValues)) : null,
+  };
 
-  // Format pump interval data for bar chart
-  const pumpIntervalChartData = pumpIntervals
-    .filter((d) => d.avgMinutesBetweenCycles != null)
-    .map((d) => ({
-      date: formatDateShort(d.date),
-      "Avg Min Between Cycles": d.avgMinutesBetweenCycles,
-    }));
+  // Sort pump intervals by date and compute weekly average
+  const sortedIntervals = [...pumpIntervals]
+    .filter(d => d.avgMinutesBetweenCycles != null)
+    .sort((a, b) => a.date.localeCompare(b.date));
+  const weeklyAvgInterval = sortedIntervals.length > 0
+    ? Math.round(sortedIntervals.reduce((s, d) => s + d.avgMinutesBetweenCycles!, 0) / sortedIntervals.length)
+    : null;
 
   // Generate heatmap data for last 30 days
   const heatmapData = generateHeatmapData(monthlyData);
@@ -189,60 +192,69 @@ export default function StatsClient({
             </Card>
           </Grid>
 
-          {/* Temperature & Humidity Charts */}
-          {envChartData.length > 0 && (
-            <Grid numItems={1} numItemsMd={2} className="gap-4 mb-6">
-              {/* Temperature Chart */}
+          {/* Environment Summary + Pump Timing */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            {/* Environment Summary */}
+            {(weeklyEnv.tempAvg != null || weeklyEnv.humAvg != null) && (
               <Card className="bg-slate-900 border-slate-800 ring-0">
-                <Title className="text-white text-sm mb-3">Daily Avg Temperature</Title>
-                <div className="temp-bar-chart">
-                  <BarChart
-                    className="h-48"
-                    data={envChartData}
-                    index="date"
-                    categories={["Avg Temp (\u00b0F)"]}
-                    colors={["orange"]}
-                    yAxisWidth={35}
-                    showAnimation={false}
-                  />
+                <Title className="text-white text-sm mb-3">Environment This Week</Title>
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Temperature */}
+                  <div>
+                    <Text className="text-slate-400 text-xs uppercase mb-1">Temperature</Text>
+                    {weeklyEnv.tempAvg != null ? (
+                      <>
+                        <div className="text-white text-2xl font-bold">{weeklyEnv.tempAvg}{"\u00b0F"}</div>
+                        <Text className="text-slate-500 text-xs mt-1">Range: {weeklyEnv.tempMin}–{weeklyEnv.tempMax}{"\u00b0F"}</Text>
+                      </>
+                    ) : (
+                      <div className="text-slate-600 text-lg">--</div>
+                    )}
+                  </div>
+                  {/* Humidity */}
+                  <div>
+                    <Text className="text-slate-400 text-xs uppercase mb-1">Humidity</Text>
+                    {weeklyEnv.humAvg != null ? (
+                      <>
+                        <div className="text-white text-2xl font-bold">{weeklyEnv.humAvg}%</div>
+                        <Text className="text-slate-500 text-xs mt-1">Range: {weeklyEnv.humMin}–{weeklyEnv.humMax}%</Text>
+                        {weeklyEnv.humMax! > 70 ? (
+                          <div className="text-rose-400 text-xs mt-1 font-medium">High — check dehumidifier</div>
+                        ) : weeklyEnv.humMax! > 50 ? (
+                          <div className="text-yellow-400 text-xs mt-1 font-medium">Elevated — monitor dehumidifier</div>
+                        ) : (
+                          <div className="text-emerald-400 text-xs mt-1 font-medium">Normal</div>
+                        )}
+                      </>
+                    ) : (
+                      <div className="text-slate-600 text-lg">--</div>
+                    )}
+                  </div>
                 </div>
               </Card>
+            )}
 
-              {/* Humidity Chart */}
+            {/* Pump Cycle Timing */}
+            {sortedIntervals.length > 0 && (
               <Card className="bg-slate-900 border-slate-800 ring-0">
-                <Title className="text-white text-sm mb-3">Daily Avg Humidity</Title>
-                <div className="humidity-bar-chart">
-                  <BarChart
-                    className="h-48"
-                    data={envChartData}
-                    index="date"
-                    categories={["Avg Humidity (%)"]}
-                    colors={["violet"]}
-                    yAxisWidth={35}
-                    showAnimation={false}
-                  />
+                <Title className="text-white text-sm mb-3">Pump Cycle Timing</Title>
+                {weeklyAvgInterval != null && (
+                  <div className="mb-3">
+                    <Text className="text-slate-400 text-xs uppercase">Week Average</Text>
+                    <div className="text-white text-2xl font-bold">{weeklyAvgInterval} min</div>
+                  </div>
+                )}
+                <div className="space-y-1.5">
+                  {sortedIntervals.map((d) => (
+                    <div key={d.date} className="flex justify-between items-center">
+                      <span className="text-slate-400 text-sm">{formatDateShort(d.date)}</span>
+                      <span className="text-white font-mono text-sm">{d.avgMinutesBetweenCycles} min</span>
+                    </div>
+                  ))}
                 </div>
               </Card>
-            </Grid>
-          )}
-
-          {/* Avg Time Between Pump Cycles */}
-          {pumpIntervalChartData.length > 0 && (
-            <Card className="bg-slate-900 border-slate-800 ring-0 mb-6">
-              <Title className="text-white text-sm mb-3">Avg Time Between Pump Cycles</Title>
-              <div className="pump-interval-chart">
-                <BarChart
-                  className="h-48"
-                  data={pumpIntervalChartData}
-                  index="date"
-                  categories={["Avg Min Between Cycles"]}
-                  colors={["amber"]}
-                  yAxisWidth={35}
-                  showAnimation={false}
-                />
-              </div>
-            </Card>
-          )}
+            )}
+          </div>
         </>
       ) : (
         <>
@@ -261,7 +273,7 @@ export default function StatsClient({
             </div>
 
             {/* Calendar Grid */}
-            <div className="grid grid-cols-7 gap-1 w-fit mx-auto">
+            <div className="grid gap-1 mx-auto w-fit grid-cols-[repeat(7,2.25rem)] sm:grid-cols-[repeat(7,2.75rem)]">
               {/* Weekday Headers */}
               {["S", "M", "T", "W", "T", "F", "S"].map((day, i) => (
                 <div key={i} className="w-9 sm:w-11 text-center text-[10px] text-slate-600 font-medium pb-1">
@@ -335,28 +347,33 @@ export default function StatsClient({
         </>
       )}
 
-      {/* Recent Events */}
+      {/* Recent Alerts */}
       <Card className="bg-slate-900 border-slate-800 ring-0">
-        <Title className="text-white mb-4">Recent System Events</Title>
-        {recentEvents.length > 0 ? (
-          <div className="space-y-2">
-            {recentEvents.map((event) => (
-              <div
-                key={event.id}
-                className="flex justify-between items-center py-2 border-b border-slate-800 last:border-0"
-              >
-                <span className="text-slate-300 text-sm">
-                  {formatEventType(event.event_type)}
-                </span>
-                <span className="text-slate-500 text-xs">
-                  {formatEventDate(event.created_at)}
-                </span>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <Text className="text-slate-500 text-center py-4">No system events recorded</Text>
-        )}
+        <Title className="text-white mb-4">Recent Alerts</Title>
+        {(() => {
+          const alertEvents = recentEvents.filter(e =>
+            !['pump_cycle_start', 'pump_cycle_end'].includes(e.event_type)
+          );
+          return alertEvents.length > 0 ? (
+            <div className="space-y-2">
+              {alertEvents.map((event) => (
+                <div
+                  key={event.id}
+                  className="flex justify-between items-center py-2 border-b border-slate-800 last:border-0"
+                >
+                  <span className="text-slate-300 text-sm">
+                    {formatEventType(event.event_type)}
+                  </span>
+                  <span className="text-slate-500 text-xs">
+                    {formatEventDate(event.created_at)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <Text className="text-slate-500 text-center py-4">No recent alerts — system operating normally</Text>
+          );
+        })()}
       </Card>
     </main>
   );
