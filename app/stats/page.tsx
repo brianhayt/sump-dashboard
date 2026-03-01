@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import StatsClient from './StatsClient'
 
-export const revalidate = 60; // Revalidate every 60 seconds
+export const revalidate = 60;
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -15,58 +15,23 @@ async function getStatsData() {
   const thirtyDaysAgo = new Date(today);
   thirtyDaysAgo.setDate(today.getDate() - 30);
 
-  // Fetch all data in parallel
   const [weekly, monthly, busiestDay, mostCyclesDay, events] = await Promise.all([
-    // Weekly data (last 7 days)
-    supabase
-      .from('daily_summaries')
-      .select('date, total_cycles, total_gallons, avg_temperature_f, avg_humidity_pct')
-      .gte('date', sevenDaysAgo.toISOString().split('T')[0])
-      .order('date', { ascending: true }),
-
-    // Monthly data (last 30 days)
-    supabase
-      .from('daily_summaries')
-      .select('date, total_cycles, total_gallons, avg_temperature_f, avg_humidity_pct')
-      .gte('date', thirtyDaysAgo.toISOString().split('T')[0])
-      .order('date', { ascending: true }),
-
-    // Busiest day (most gallons)
-    supabase
-      .from('daily_summaries')
-      .select('date, total_cycles, total_gallons, avg_temperature_f, avg_humidity_pct')
-      .order('total_gallons', { ascending: false })
-      .limit(1),
-
-    // Day with most cycles
-    supabase
-      .from('daily_summaries')
-      .select('date, total_cycles, total_gallons, avg_temperature_f, avg_humidity_pct')
-      .order('total_cycles', { ascending: false })
-      .limit(1),
-
-    // Recent events
-    supabase
-      .from('events')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(20)
+    supabase.from('daily_summaries').select('*').gte('date', sevenDaysAgo.toISOString().split('T')[0]).order('date', { ascending: true }),
+    supabase.from('daily_summaries').select('*').gte('date', thirtyDaysAgo.toISOString().split('T')[0]).order('date', { ascending: true }),
+    supabase.from('daily_summaries').select('*').order('total_gallons', { ascending: false }).limit(1),
+    supabase.from('daily_summaries').select('*').order('total_cycles', { ascending: false }).limit(1),
+    supabase.from('events').select('*').order('created_at', { ascending: false }).limit(20)
   ]);
 
-  // Fetch all-time totals and pump cycle events in parallel
+  // FIX: Get the MOST RECENT events first and increase limit to handle 800+ cycles/day
   const [allTimeResult, pumpEventsResult] = await Promise.all([
-    supabase
-      .from('daily_summaries')
-      .select('total_cycles, total_gallons'),
-
-    // Pump cycle events for last 7 days (for avg time between cycles)
-    supabase
-      .from('events')
+    supabase.from('daily_summaries').select('total_cycles, total_gallons'),
+    supabase.from('events')
       .select('created_at')
       .eq('event_type', 'pump_cycle_end')
       .gte('created_at', sevenDaysAgo.toISOString())
-      .order('created_at', { ascending: true })
-      .limit(5000)
+      .order('created_at', { ascending: false }) // Get newest first
+      .limit(10000) // Increased limit for high-frequency pumps
   ]);
 
   const allTimeTotals = (allTimeResult.data || []).reduce(
@@ -77,32 +42,29 @@ async function getStatsData() {
     { totalCycles: 0, totalGallons: 0 }
   );
 
-  // Compute average minutes between pump cycles per day
-  const pumpEvents = pumpEventsResult.data || [];
+  // Reverse the array so the math [i] - [i-1] works chronologically
+  const pumpEvents = (pumpEventsResult.data || []).reverse();
   const eventsByDay = new Map<string, Date[]>();
-  for (const event of pumpEvents) {
-    const date = new Date(event.created_at);
-    // Group by date in local Eastern time (matches dashboard convention)
-    const dateStr = date.toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
-    if (!eventsByDay.has(dateStr)) eventsByDay.set(dateStr, []);
-    eventsByDay.get(dateStr)!.push(date);
+  
+  for (let i = 0; i < 7; i++) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    eventsByDay.set(d.toLocaleDateString('en-CA', { timeZone: 'America/New_York' }), []);
   }
 
-  const pumpIntervals: { date: string; avgMinutesBetweenCycles: number | null }[] = [];
-  for (const [dateStr, times] of eventsByDay) {
-    if (times.length < 2) {
-      pumpIntervals.push({ date: dateStr, avgMinutesBetweenCycles: null });
-      continue;
-    }
+  for (const event of pumpEvents) {
+    const dateStr = new Date(event.created_at).toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+    if (eventsByDay.has(dateStr)) eventsByDay.get(dateStr)!.push(new Date(event.created_at));
+  }
+
+  const pumpIntervals = Array.from(eventsByDay.entries()).map(([dateStr, times]) => {
+    if (times.length < 2) return { date: dateStr, avgMinutesBetweenCycles: null };
     let totalMinutes = 0;
     for (let i = 1; i < times.length; i++) {
       totalMinutes += (times[i].getTime() - times[i - 1].getTime()) / 60000;
     }
-    pumpIntervals.push({
-      date: dateStr,
-      avgMinutesBetweenCycles: Math.round(totalMinutes / (times.length - 1))
-    });
-  }
+    return { date: dateStr, avgMinutesBetweenCycles: Math.round(totalMinutes / (times.length - 1)) };
+  }).sort((a, b) => b.date.localeCompare(a.date));
 
   return {
     weeklyData: weekly.data || [],
