@@ -15,6 +15,7 @@ async function getStatsData() {
   const thirtyDaysAgo = new Date(today);
   thirtyDaysAgo.setDate(today.getDate() - 30);
 
+  // Fetch metrics and events
   const [weekly, monthly, busiestDay, mostCyclesDay, events] = await Promise.all([
     supabase.from('daily_summaries').select('*').gte('date', sevenDaysAgo.toISOString().split('T')[0]).order('date', { ascending: true }),
     supabase.from('daily_summaries').select('*').gte('date', thirtyDaysAgo.toISOString().split('T')[0]).order('date', { ascending: true }),
@@ -23,15 +24,15 @@ async function getStatsData() {
     supabase.from('events').select('*').order('created_at', { ascending: false }).limit(20)
   ]);
 
-  // FIX: Get the MOST RECENT events first and increase limit to handle 800+ cycles/day
+  // FIX: Fetch events descending to get 2/28 data first, then reverse for interval math
   const [allTimeResult, pumpEventsResult] = await Promise.all([
     supabase.from('daily_summaries').select('total_cycles, total_gallons'),
     supabase.from('events')
       .select('created_at')
       .eq('event_type', 'pump_cycle_end')
       .gte('created_at', sevenDaysAgo.toISOString())
-      .order('created_at', { ascending: false }) // Get newest first
-      .limit(10000) // Increased limit for high-frequency pumps
+      .order('created_at', { ascending: false }) 
+      .limit(10000) 
   ]);
 
   const allTimeTotals = (allTimeResult.data || []).reduce(
@@ -42,7 +43,6 @@ async function getStatsData() {
     { totalCycles: 0, totalGallons: 0 }
   );
 
-  // Reverse the array so the math [i] - [i-1] works chronologically
   const pumpEvents = (pumpEventsResult.data || []).reverse();
   const eventsByDay = new Map<string, Date[]>();
   
@@ -79,5 +79,6 @@ async function getStatsData() {
 
 export default async function StatsPage() {
   const data = await getStatsData();
+  // We pass the data object to the Client Component
   return <StatsClient {...data} />;
 }
